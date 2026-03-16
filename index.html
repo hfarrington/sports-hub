@@ -748,7 +748,11 @@ function superRugbySection(d,isPast){
 function nrlSection(d){
   if(!d)return null;
   const c=card('#b0ff4e',80);
-  c.appendChild(secHead('⚔️','NRL — Warriors','#b0ff4e',d.round));
+  c.appendChild(secHead('⚔️','NRL','#b0ff4e',d.round));
+  const wBadge=el('div',{style:{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 12px',marginBottom:'10px',borderRadius:'6px',background:'rgba(176,255,78,0.08)',border:'1px solid rgba(176,255,78,0.2)',fontSize:'11px',fontWeight:'800',letterSpacing:'0.5px',textTransform:'uppercase',color:'#b0ff4e'}});
+  if(TEAM_LOGOS['Warriors']){wBadge.appendChild(logoImg(TEAM_LOGOS['Warriors'],16));}
+  wBadge.appendChild(document.createTextNode('Warriors Only'));
+  c.appendChild(wBadge);
   if(d.bye){c.appendChild(el('div',{className:'sec-sub',style:{padding:'8px 12px',background:'rgba(255,255,255,0.03)',borderRadius:'6px',fontStyle:'italic',color:'#666'}},'🏝️ '+d.note));}
   else if(d.warriors){
     const wh=el('div',{className:'w-hl'});
@@ -767,7 +771,11 @@ function nrlSection(d){
 // ─── NRL SECTION (YEAR VIEW) ──────────────────────────────────────────────
 function nrlYearSection(){
   const c=card('#b0ff4e',80);
-  c.appendChild(secHead('⚔️','NRL — Warriors 2026 Full Season','#b0ff4e','All 27 Rounds · Go Warriors!'));
+  c.appendChild(secHead('⚔️','NRL — 2026 Full Season','#b0ff4e','All 27 Rounds'));
+  const wBadge2=el('div',{style:{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 12px',marginBottom:'10px',borderRadius:'6px',background:'rgba(176,255,78,0.08)',border:'1px solid rgba(176,255,78,0.2)',fontSize:'11px',fontWeight:'800',letterSpacing:'0.5px',textTransform:'uppercase',color:'#b0ff4e'}});
+  if(TEAM_LOGOS['Warriors']){wBadge2.appendChild(logoImg(TEAM_LOGOS['Warriors'],16));}
+  wBadge2.appendChild(document.createTextNode('Warriors Only'));
+  c.appendChild(wBadge2);
   const played=NRL_FULL_SEASON.filter(g=>!g.bye&&g.hs!=null);
   const wins=played.filter(g=>{
     const isHome=g.home==='Warriors';
@@ -1130,7 +1138,7 @@ function render(){
   // Row 1: Top-level sport filters
   const fr1=el('div',{className:'frow',style:{justifyContent:'flex-end'}});
   [['Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227','All Blacks'],
-   ['NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','Warriors'],
+   ['NRL','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','NRL'],
    ['F1','f1',showF1,()=>{showF1=!showF1;render();},'#ff1801','F1'],
    ['Football','football',showFootball,()=>{showFootball=!showFootball;render();},'#5b21b6','A-League'],
   ].forEach(([lbl,,isOn,fn,col,logoKey])=>{
