@@ -58,25 +58,1225 @@ button{cursor:pointer;font-family:'Barlow Condensed',sans-serif;transition:all 0
 /* standings table */
 .stbl{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
 .stbl th{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;color:#555;text-align:left;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-transform:uppercase}
-.stbl th.r,.stbl td.r{text-align:right;padding-right:12px}
-.stbl td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.03)}
-.stbl td.num{color:#b0ff4e}
-.stbl td.act{color:#00c9ff}
-.stbl .nm{font-weight:700;color:#fff}
-/* rankings */
-.rnk{display:flex;flex-direction:column;gap:7px}
-.rnk-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;background:rgba(255,255,255,0.02)}
-.rnk-num{min-width:25px;text-align:center;font-weight:700;color:#b0ff4e}
-.rnk-name{flex:1;color:#fff;font-weight:600;font-size:14px}
-.rnk-info{font-size:11px;color:#666}
+.stbl th.r,.stbl td.r{text-align:right}
+.stbl td{padding:5px 8px;color:#bbb;border-bottom:1px solid rgba(255,255,255,0.04)}
+.stbl tr.top td{color:#fff;font-weight:600}
+.stbl tr.champ td{color:#ffd700}
+.stbl td.pts{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:#fff}
+.stbl td.rank{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;width:24px}
+/* commentary */
+.comment{font-size:13px;color:#7a8a9a;font-style:italic;padding:8px 12px;margin-top:10px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:2px solid rgba(255,255,255,0.1);line-height:1.5}
+/* legend */
+.legend{display:flex;gap:8px;margin-bottom:16px;padding:8px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.06);align-items:center;flex-wrap:wrap}
 /* future note */
-.future-note{background:rgba(255,160,64,0.1);border-left:3px solid #ffa040;padding:14px;border-radius:6px;color:#ff9c66;font-size:13px;line-height:1.5}
+.future-note{text-align:center;padding:20px 0;color:#444;font-size:14px;font-style:italic;animation:fadeIn 0.35s ease}
+/* f1 block */
+.f1b{padding:12px 14px;border-radius:10px}
+.f1-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;font-size:13px;color:#888}
+/* section divider for intl rugby */
+.comp-tag{font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:0.5px;display:inline-block;margin-bottom:4px}
+.intl-gr{padding:10px 14px;margin-bottom:7px;border-radius:8px;background:rgba(255,255,255,0.03);border-left:3px solid transparent}
+.intl-gr .tn{font-size:16px}
+.intl-gr .sb{font-size:17px}
+/* track */
+.track-bar{margin-top:10px;position:relative;height:3px;border-radius:2px;background:rgba(255,255,255,0.07)}
+.track-fill{position:absolute;height:100%;border-radius:2px;transition:left 0.25s ease}
+/* year toggle */
+.year-toggle{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.06)}
+/* year section round headers */
+.yr-round{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;color:#b0ff4e;letter-spacing:1px;text-transform:uppercase;padding:10px 0 5px;border-bottom:1px solid rgba(176,255,78,0.1);margin-bottom:6px}
+.yr-bye{padding:8px 14px;margin-bottom:7px;border-radius:8px;background:rgba(255,255,255,0.02);color:#555;font-style:italic;font-size:13px}
+@media(max-width:600px){
+  .tn{font-size:15px;min-width:55px}.sb{font-size:18px;min-width:80px;padding:3px 10px}
+  .fbtn{padding:4px 10px;font-size:11px}.tbtn{padding:5px 11px;font-size:11px}
+  .stbl{font-size:12px}
+  .intl-gr .tn{font-size:14px}.intl-gr .sb{font-size:15px}
+}
 </style>
 </head>
-<body>
-<div id="app"></div>
+<body><div id="app"></div>
 <script>
-// Data constants
-const WEEKENDS = [
+// ─── TZ HELPERS (DST-aware for NZ, Melbourne, Perth) ──────────────────────
+// NZ: NZDT (UTC+13) first Sun in Apr → NZST (UTC+12) last Sun in Sep → NZDT (UTC+13)
+// Melbourne/VIC: AEDT (UTC+11) first Sun in Apr → AEST (UTC+10) first Sun in Oct → AEDT (UTC+11)
+// Perth/WA: AWST (UTC+8) year-round — no DST
+function nthSunday(year, month, nth){
+  // nth=1 → first Sunday, nth=-1 → last Sunday
+  if(nth>0){
+    const d=new Date(year,month,1);
+    const dow=d.getDay();
+    const first=dow===0?1:8-dow;
+    return new Date(year,month,first+(nth-1)*7);
+  } else {
+    const d=new Date(year,month+1,0); // last day of month
+    const dow=d.getDay();
+    return new Date(year,month,d.getDate()-dow);
+  }
+}
+function getOffset(utcStr, zone){
+  if(!utcStr) return null;
+  const [dp,tp]=utcStr.split('T');
+  const [y,mo,d]=dp.split('-').map(Number);
+  const utcDate=new Date(Date.UTC(y,mo-1,d,parseInt(tp.split(':')[0]),parseInt(tp.split(':')[1])));
+  if(zone==='AWST') return {off:8,label:'AWST',color:'#ffa040'};
+  if(zone==='NZ'){
+    // NZ DST: Clocks go forward last Sun of Sep at 2am → NZDT (UTC+13)
+    //         Clocks go back first Sun of Apr at 3am → NZST (UTC+12)
+    const dstEnd=nthSunday(y,3,1); // first Sun April (month 3)
+    dstEnd.setUTCHours(14,0,0,0); // 3am NZDT = 2am NZST = 14:00 UTC
+    const dstStart=nthSunday(y,8,-1); // last Sun Sep (month 8)
+    dstStart.setUTCHours(14,0,0,0); // 2am NZST = 14:00 UTC
+    const isDST = utcDate < dstEnd || utcDate >= dstStart;
+    return isDST ? {off:13,label:'NZDT',color:'#00c9ff'} : {off:12,label:'NZST',color:'#00c9ff'};
+  }
+  if(zone==='MEL'){
+    // VIC/NSW DST: Clocks go forward first Sun of Oct at 2am → AEDT (UTC+11)
+    //              Clocks go back first Sun of Apr at 3am → AEST (UTC+10)
+    const dstEnd=nthSunday(y,3,1); // first Sun April
+    dstEnd.setUTCHours(16,0,0,0); // 3am AEDT = 2am AEST = 16:00 UTC
+    const dstStart=nthSunday(y,9,1); // first Sun October
+    dstStart.setUTCHours(16,0,0,0); // 2am AEST = 16:00 UTC
+    const isDST = utcDate < dstEnd || utcDate >= dstStart;
+    return isDST ? {off:11,label:'AEDT',color:'#e879f9'} : {off:10,label:'AEST',color:'#e879f9'};
+  }
+  return {off:0,label:'UTC',color:'#888'};
+}
+function tzTime(utc, off) {
+  if (!utc) return null;
+  const [dp, tp] = utc.split('T');
+  const [y,mo,d] = dp.split('-').map(Number);
+  const [h,m] = tp.split(':').map(Number);
+  let mins = h*60+m+off*60;
+  const date = new Date(y,mo-1,d);
+  if (mins>=1440){mins-=1440;date.setDate(date.getDate()+1);}
+  if (mins<0){mins+=1440;date.setDate(date.getDate()-1);}
+  const hh=Math.floor(mins/60)%24, mm=mins%60;
+  const ap=hh>=12?'pm':'am', h12=hh%12||12;
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return `${days[date.getDay()]} ${h12}${mm?':'+String(mm).padStart(2,'0'):''}${ap}`;
+}
+function mkTZ(utc){
+  if(!utc) return [];
+  const nz=getOffset(utc,'NZ');
+  const mel=getOffset(utc,'MEL');
+  const wa=getOffset(utc,'AWST');
+  return [
+    {t:tzTime(utc,nz.off),l:nz.label,c:nz.color},
+    {t:tzTime(utc,mel.off),l:mel.label,c:mel.color},
+    {t:tzTime(utc,wa.off),l:wa.label,c:wa.color},
+  ];
+}
+function utcToDate(utc){
+  if(!utc) return null;
+  const [dp]=utc.split('T');
+  const [y,mo,d]=dp.split('-').map(Number);
+  const date=new Date(y,mo-1,d);
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[date.getDay()]} ${d} ${months[mo-1]}`;
+}
 
-<!-- test -->
+// ─── DATA ──────────────────────────────────────────────────────────────────
+
+const SIX_NATIONS_RESULTS = [
+  {r:'Rd 1',home:'France',hs:36,away:'Ireland',as:14,utc:'2026-02-05T20:10',venue:'Stade de France',city:'Saint-Denis',country:'France',flag:'🇫🇷'},
+  {r:'Rd 1',home:'Italy',hs:24,away:'Scotland',as:18,utc:'2026-02-07T13:00',venue:'Stadio Olimpico',city:'Rome',country:'Italy',flag:'🇮🇹'},
+  {r:'Rd 1',home:'England',hs:37,away:'Wales',as:13,utc:'2026-02-07T15:30',venue:'Allianz Stadium (Twickenham)',city:'London',country:'England',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {r:'Rd 2',home:'Ireland',hs:42,away:'England',as:21,utc:'2026-02-14T15:00',venue:'Aviva Stadium',city:'Dublin',country:'Ireland',flag:'🇮🇪'},
+  {r:'Rd 2',home:'Scotland',hs:28,away:'Wales',as:6,utc:'2026-02-14T17:30',venue:'Scottish Gas Murrayfield',city:'Edinburgh',country:'Scotland',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},
+  {r:'Rd 2',home:'France',hs:48,away:'Italy',as:22,utc:'2026-02-15T15:45',venue:'Stade de France',city:'Saint-Denis',country:'France',flag:'🇫🇷'},
+  {r:'Rd 3',home:'Wales',hs:20,away:'France',as:55,utc:'2026-02-21T14:15',venue:'Principality Stadium',city:'Cardiff',country:'Wales',flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿'},
+  {r:'Rd 3',home:'England',hs:55,away:'France',as:35,utc:'2026-02-21T16:45',venue:'Allianz Stadium (Twickenham)',city:'London',country:'England',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {r:'Rd 3',home:'Ireland',hs:31,away:'Italy',as:10,utc:'2026-02-22T15:00',venue:'Aviva Stadium',city:'Dublin',country:'Ireland',flag:'🇮🇪'},
+  {r:'Rd 4',home:'Scotland',hs:50,away:'France',as:40,utc:'2026-03-06T20:05',venue:'Scottish Gas Murrayfield',city:'Edinburgh',country:'Scotland',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'},
+  {r:'Rd 4',home:'Italy',hs:26,away:'England',as:23,utc:'2026-03-07T15:15',venue:'Stadio Olimpico',city:'Rome',country:'Italy',flag:'🇮🇹'},
+  {r:'Rd 4',home:'Ireland',hs:38,away:'Wales',as:14,utc:'2026-03-06T20:00',venue:'Aviva Stadium',city:'Dublin',country:'Ireland',flag:'🇮🇪'},
+  {r:'Rd 5',home:'Ireland',hs:43,away:'Scotland',as:21,utc:'2026-03-14T15:10',venue:'Aviva Stadium',city:'Dublin',country:'Ireland',flag:'🇮🇪'},
+  {r:'Rd 5',home:'Wales',hs:31,away:'Italy',as:17,utc:'2026-03-14T17:40',venue:'Principality Stadium',city:'Cardiff',country:'Wales',flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿'},
+  {r:'Rd 5',home:'France',hs:48,away:'England',as:46,utc:'2026-03-14T20:10',venue:'Stade de France',city:'Saint-Denis',country:'France',flag:'🇫🇷'},
+];
+
+const SIX_NATIONS_TABLE = [
+  {pos:1,team:'🇫🇷 France',    p:5,w:4,l:1,pts:21,diff:'+128',champion:true},
+  {pos:2,team:'🇮🇪 Ireland',   p:5,w:4,l:1,pts:19,diff:'+38'},
+  {pos:3,team:'🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland', p:5,w:3,l:2,pts:13,diff:'-1'},
+  {pos:4,team:'🇮🇹 Italy',     p:5,w:2,l:3,pts:9, diff:'-38'},
+  {pos:5,team:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 England',  p:5,w:1,l:4,pts:5, diff:'+4'},
+  {pos:6,team:'🏴󠁧󠁢󠁷󠁬󠁳󠁿 Wales',    p:5,w:1,l:4,pts:4, diff:'-82'},
+];
+
+const SUPER_RUGBY_TABLE = [
+  {pos:1,team:'🌀 Hurricanes', p:4,w:4,l:0,pts:20,diff:'+72'},
+  {pos:2,team:'🔴 Reds',       p:4,w:3,l:1,pts:16,diff:'+34'},
+  {pos:3,team:'🟡 Chiefs',     p:4,w:3,l:1,pts:14,diff:'+75'},
+  {pos:4,team:'⚫ Crusaders',  p:4,w:3,l:1,pts:13,diff:'+14'},
+  {pos:5,team:'🔵 Blues',      p:4,w:3,l:1,pts:12,diff:'+12'},
+  {pos:6,team:'🔷 Highlanders',p:4,w:2,l:2,pts:9, diff:'-18'},
+  {pos:7,team:'🔵 Brumbies',   p:4,w:2,l:2,pts:9, diff:'+10'},
+  {pos:8,team:'🟢 Fijian Drua',p:3,w:2,l:1,pts:9, diff:'+5'},
+  {pos:9,team:'🟡 W. Force',   p:4,w:1,l:3,pts:4, diff:'-47'},
+  {pos:10,team:'🔴 Waratahs',  p:4,w:0,l:4,pts:1, diff:'-76'},
+  {pos:11,team:'🌊 Moana Pasifika',p:4,w:0,l:4,pts:0,diff:'-81'},
+];
+
+// All Blacks 2026 Tests
+const ALL_BLACKS = [
+  {date:'Sat 4 Jul',home:'All Blacks',hs:null,away:'France',as:null,venue:'One New Zealand Stadium',city:'Christchurch',country:'New Zealand',flag:'🇳🇿',utc:'2026-07-04T07:10',comp:'Nations Championship'},
+  {date:'Sat 11 Jul',home:'All Blacks',hs:null,away:'Italy',as:null,venue:'Sky Stadium',city:'Wellington',country:'New Zealand',flag:'🇳🇿',utc:'2026-07-11T05:10',comp:'Nations Championship'},
+  {date:'Sat 18 Jul',home:'All Blacks',hs:null,away:'Ireland',as:null,venue:'Eden Park',city:'Auckland',country:'New Zealand',flag:'🇳🇿',utc:'2026-07-18T07:00',comp:'Nations Championship'},
+  {date:'Fri 22 Aug',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'Ellis Park',city:'Johannesburg',country:'South Africa',flag:'🇿🇦',utc:'2026-08-22T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 29 Aug',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'DHL Stadium',city:'Cape Town',country:'South Africa',flag:'🇿🇦',utc:'2026-08-29T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 5 Sep',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'FNB Stadium',city:'Johannesburg',country:'South Africa',flag:'🇿🇦',utc:'2026-09-05T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 12 Sep',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'M&T Bank Stadium',city:'Baltimore',country:'USA',flag:'🇺🇸',utc:'2026-09-12T19:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 10 Oct',home:'All Blacks',hs:null,away:'Wallabies',as:null,venue:'Eden Park',city:'Auckland',country:'New Zealand',flag:'🇳🇿',utc:'2026-10-10T07:10',comp:'Bledisloe Cup'},
+  {date:'Sat 17 Oct',home:'Wallabies',hs:null,away:'All Blacks',as:null,venue:'Accor Stadium',city:'Sydney',country:'Australia',flag:'🇦🇺',utc:'2026-10-17T09:00',comp:'Bledisloe Cup'},
+  {date:'Sun 8 Nov',home:'Scotland',hs:null,away:'All Blacks',as:null,venue:'Scottish Gas Murrayfield',city:'Edinburgh',country:'Scotland',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',utc:'2026-11-08T15:30',comp:'Nations Championship'},
+  {date:'Sun 15 Nov',home:'Wales',hs:null,away:'All Blacks',as:null,venue:'Principality Stadium',city:'Cardiff',country:'Wales',flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',utc:'2026-11-15T15:30',comp:'Nations Championship'},
+  {date:'Sun 22 Nov',home:'England',hs:null,away:'All Blacks',as:null,venue:'Allianz Stadium (Twickenham)',city:'London',country:'England',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',utc:'2026-11-22T15:30',comp:'Nations Championship'},
+];
+
+// Wallabies 2026 Tests
+const WALLABIES = [
+  {date:'Sat 4 Jul',home:'Wallabies',hs:null,away:'Ireland',as:null,venue:'Allianz Stadium',city:'Sydney',country:'Australia',flag:'🇦🇺',utc:'2026-07-04T09:30',comp:'Nations Championship'},
+  {date:'Sat 11 Jul',home:'Wallabies',hs:null,away:'France',as:null,venue:'Suncorp Stadium',city:'Brisbane',country:'Australia',flag:'🇦🇺',utc:'2026-07-11T09:05',comp:'Nations Championship'},
+  {date:'Sat 18 Jul',home:'Wallabies',hs:null,away:'Italy',as:null,venue:'TBC',city:'Australia',country:'Australia',flag:'🇦🇺',utc:null,comp:'Nations Championship'},
+  {date:'Sat 8 Aug',home:'Japan',hs:null,away:'Wallabies',as:null,venue:'National Stadium',city:'Tokyo',country:'Japan',flag:'🇯🇵',utc:'2026-08-08T11:00',comp:'Flight Centre Series'},
+  {date:'Sat 15 Aug',home:'Wallabies',hs:null,away:'Japan',as:null,venue:'Queensland Country Bank Stadium',city:'Townsville',country:'Australia',flag:'🇦🇺',utc:'2026-08-15T09:05',comp:'Flight Centre Series'},
+  {date:'Sat 29 Aug',home:'Argentina',hs:null,away:'Wallabies',as:null,venue:'TBC',city:'Argentina',country:'Argentina',flag:'🇦🇷',utc:'2026-08-29T21:00',comp:'Puma Trophy'},
+  {date:'Sat 5 Sep',home:'Argentina',hs:null,away:'Wallabies',as:null,venue:'TBC',city:'Argentina',country:'Argentina',flag:'🇦🇷',utc:'2026-09-05T21:00',comp:'Puma Trophy'},
+  {date:'Sat 27 Sep',home:'Wallabies',hs:null,away:'Springboks',as:null,venue:'Optus Stadium',city:'Perth',country:'Australia',flag:'🇦🇺',utc:'2026-09-27T09:00',comp:'One-Off Test'},
+  {date:'Sat 10 Oct',home:'All Blacks',hs:null,away:'Wallabies',as:null,venue:'Eden Park',city:'Auckland',country:'New Zealand',flag:'🇳🇿',utc:'2026-10-10T07:10',comp:'Bledisloe Cup'},
+  {date:'Sat 17 Oct',home:'Wallabies',hs:null,away:'All Blacks',as:null,venue:'Accor Stadium',city:'Sydney',country:'Australia',flag:'🇦🇺',utc:'2026-10-17T09:00',comp:'Bledisloe Cup'},
+  {date:'Sun 8 Nov',home:'England',hs:null,away:'Wallabies',as:null,venue:'Allianz Stadium (Twickenham)',city:'London',country:'England',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',utc:'2026-11-08T17:30',comp:'Nations Championship'},
+  {date:'Sat 15 Nov',home:'Scotland',hs:null,away:'Wallabies',as:null,venue:'Scottish Gas Murrayfield',city:'Edinburgh',country:'Scotland',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',utc:'2026-11-15T15:00',comp:'Nations Championship'},
+  {date:'Sat 21 Nov',home:'Wales',hs:null,away:'Wallabies',as:null,venue:'Principality Stadium',city:'Cardiff',country:'Wales',flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',utc:'2026-11-21T15:30',comp:'Nations Championship'},
+];
+
+// Springboks 2026 Tests
+const SPRINGBOKS = [
+  {date:'Sat 4 Jul',home:'Springboks',hs:null,away:'England',as:null,venue:'Ellis Park',city:'Johannesburg',country:'South Africa',flag:'🇿🇦',utc:'2026-07-04T15:00',comp:'Nations Championship'},
+  {date:'Sat 11 Jul',home:'Springboks',hs:null,away:'Scotland',as:null,venue:'Loftus Versfeld',city:'Pretoria',country:'South Africa',flag:'🇿🇦',utc:'2026-07-11T15:00',comp:'Nations Championship'},
+  {date:'Sat 18 Jul',home:'Springboks',hs:null,away:'Wales',as:null,venue:'Hollywoodbets Kings Park',city:'Durban',country:'South Africa',flag:'🇿🇦',utc:'2026-07-18T15:00',comp:'Nations Championship'},
+  {date:'Fri 22 Aug',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'Ellis Park',city:'Johannesburg',country:'South Africa',flag:'🇿🇦',utc:'2026-08-22T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 29 Aug',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'DHL Stadium',city:'Cape Town',country:'South Africa',flag:'🇿🇦',utc:'2026-08-29T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 5 Sep',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'FNB Stadium',city:'Johannesburg',country:'South Africa',flag:'🇿🇦',utc:'2026-09-05T15:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 12 Sep',home:'Springboks',hs:null,away:'All Blacks',as:null,venue:'M&T Bank Stadium',city:'Baltimore',country:'USA',flag:'🇺🇸',utc:'2026-09-12T19:00',comp:"Rugby's Greatest Rivalry"},
+  {date:'Sat 27 Sep',home:'Wallabies',hs:null,away:'Springboks',as:null,venue:'Optus Stadium',city:'Perth',country:'Australia',flag:'🇦🇺',utc:'2026-09-27T09:00',comp:'One-Off Test'},
+  {date:'Sat 7 Nov',home:'Italy',hs:null,away:'Springboks',as:null,venue:'Stadio Olimpico',city:'Rome',country:'Italy',flag:'🇮🇹',utc:'2026-11-07T13:15',comp:'Nations Championship'},
+  {date:'Fri 13 Nov',home:'France',hs:null,away:'Springboks',as:null,venue:'Stade de France',city:'Saint-Denis',country:'France',flag:'🇫🇷',utc:'2026-11-13T20:00',comp:'Nations Championship'},
+  {date:'Sat 21 Nov',home:'Ireland',hs:null,away:'Springboks',as:null,venue:'Aviva Stadium',city:'Dublin',country:'Ireland',flag:'🇮🇪',utc:'2026-11-21T15:30',comp:'Nations Championship'},
+];
+
+// NRL Full 2026 Warriors Season
+const NRL_FULL_SEASON = [
+  {round:'Round 1',date:'Fri 6 Mar',home:'Warriors',away:'Roosters',hs:42,as:18,utc:'2026-03-06T07:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 2',date:'Fri 13 Mar',home:'Warriors',away:'Raiders',hs:40,as:6,utc:'2026-03-13T07:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 3',date:'Sat 21 Mar',home:'Knights',away:'Warriors',hs:null,as:null,utc:'2026-03-21T04:00',venue:'McDonald Jones Stadium',city:'Newcastle',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 4',date:'Fri 27 Mar',home:'Warriors',away:'Wests Tigers',hs:null,as:null,utc:'2026-03-27T07:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 5',date:'Sun 5 Apr',home:'Sharks',away:'Warriors',hs:null,as:null,utc:'2026-04-05T04:00',venue:'PointsBet Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 6',date:'Sat 11 Apr',home:'Storm',away:'Warriors',hs:null,as:null,utc:'2026-04-11T09:30',venue:'AAMI Park',city:'Melbourne',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 7',date:'Sat 18 Apr',home:'Warriors',away:'Titans',hs:null,as:null,utc:'2026-04-18T05:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 8',date:'Sat 25 Apr',home:'Warriors',away:'Dolphins',hs:null,as:null,utc:'2026-04-25T08:05',venue:'Sky Stadium',city:'Wellington',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 9',date:'Sat 2 May',home:'Eels',away:'Warriors',hs:null,as:null,utc:'2026-05-02T07:30',venue:'CommBank Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 10',date:'10–11 May',home:null,away:null,hs:null,as:null,utc:null,venue:null,city:null,country:null,flag:null,ha:null,bye:true},
+  {round:'Round 11',date:'Sun 17 May',home:'Broncos',away:'Warriors',hs:null,as:null,utc:'2026-05-17T06:05',venue:'Suncorp Stadium',city:'Brisbane',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 12',date:'Sat 23 May',home:'Dragons',away:'Warriors',hs:null,as:null,utc:'2026-05-23T07:30',venue:'Jubilee Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 13',date:'Sun 31 May',home:'Panthers',away:'Warriors',hs:null,as:null,utc:'2026-05-31T08:15',venue:'BlueBet Stadium',city:'Penrith',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 14',date:'7–8 Jun',home:null,away:null,hs:null,as:null,utc:null,venue:null,city:null,country:null,flag:null,ha:null,bye:true},
+  {round:'Round 15',date:'Sat 13 Jun',home:'Warriors',away:'Sharks',hs:null,as:null,utc:'2026-06-13T07:30',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 16',date:'Sun 21 Jun',home:'Warriors',away:'Cowboys',hs:null,as:null,utc:'2026-06-21T04:00',venue:'One NZ Stadium',city:'Christchurch',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 17',date:'Sat 27 Jun',home:'Dolphins',away:'Warriors',hs:null,as:null,utc:'2026-06-27T05:00',venue:'Suncorp Stadium',city:'Brisbane',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 18',date:'4–5 Jul',home:null,away:null,hs:null,as:null,utc:null,venue:null,city:null,country:null,flag:null,ha:null,bye:true},
+  {round:'Round 19',date:'Fri 10 Jul',home:'Wests Tigers',away:'Warriors',hs:null,as:null,utc:'2026-07-10T10:00',venue:'Campbelltown Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 20',date:'Sat 18 Jul',home:'Warriors',away:'Dragons',hs:null,as:null,utc:'2026-07-18T07:30',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 21',date:'Sat 25 Jul',home:'Bulldogs',away:'Warriors',hs:null,as:null,utc:'2026-07-25T07:30',venue:'Accor Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 22',date:'Sat 1 Aug',home:'Titans',away:'Warriors',hs:null,as:null,utc:'2026-08-01T05:00',venue:'Cbus Super Stadium',city:'Gold Coast',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 23',date:'Fri 7 Aug',home:'Warriors',away:'Panthers',hs:null,as:null,utc:'2026-08-07T08:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 24',date:'Sat 15 Aug',home:'Broncos',away:'Warriors',hs:null,as:null,utc:'2026-08-15T09:30',venue:'Suncorp Stadium',city:'Brisbane',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 25',date:'Sat 22 Aug',home:'Rabbitohs',away:'Warriors',hs:null,as:null,utc:'2026-08-22T07:30',venue:'Accor Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺',ha:'A'},
+  {round:'Round 26',date:'Sun 30 Aug',home:'Warriors',away:'Knights',hs:null,as:null,utc:'2026-08-30T04:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+  {round:'Round 27',date:'Sat 5 Sep',home:'Warriors',away:'Sea Eagles',hs:null,as:null,utc:'2026-09-05T05:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿',ha:'H'},
+];
+
+const WEEKENDS = [
+{id:'w0',label:'1–2 Mar',wkLabel:'Wk 1 Mar',tag:'past',
+  superRugby:{round:'Round 3 (28 Feb)',comment:'Crusaders edged Blues 43–33 in a thriller, Drua beat Hurricanes in Fiji. Highlanders thumped Chiefs.',
+    games:[
+      {home:'Crusaders',hs:43,away:'Blues',as:33,utc:'2026-02-28T07:05',venue:'Apollo Projects Stadium',city:'Christchurch',country:'NZ',flag:'🇳🇿'},
+      {home:'Highlanders',hs:31,away:'Chiefs',as:14,utc:'2026-02-28T08:35',venue:'Forsyth Barr Stadium',city:'Dunedin',country:'NZ',flag:'🇳🇿'},
+      {home:'Fijian Drua',hs:25,away:'Hurricanes',as:20,utc:'2026-02-28T06:35',venue:'HFC Bank Stadium',city:'Suva',country:'Fiji',flag:'🇫🇯'},
+      {home:'Brumbies',hs:30,away:'Hurricanes',as:27,utc:'2026-02-28T09:35',venue:'GIO Stadium',city:'Canberra',country:'AUS',flag:'🇦🇺'},
+    ]},
+  nrl:{round:'Round 1 — Las Vegas',bye:true,note:'Warriors had the Round 1 Las Vegas bye.',
+    games:[
+      {home:'Newcastle Knights',hs:28,away:'NQ Cowboys',as:18,utc:'2026-03-01T02:15',venue:'Allegiant Stadium',city:'Las Vegas, Nevada',country:'USA',flag:'🇺🇸'},
+      {home:'Bulldogs',hs:15,away:'Dragons',as:14,utc:'2026-03-01T04:30',venue:'Allegiant Stadium',city:'Las Vegas, Nevada',country:'USA',flag:'🇺🇸'},
+    ]},
+  aLeague:{games:[
+    {home:'Wellington Phoenix',hs:0,away:'Auckland FC',as:5,utc:'2026-02-20T15:00',venue:'Sky Stadium',city:'Wellington',country:'NZ',flag:'🇳🇿'},
+  ]},
+  f1:{round:'R1 — Australian GP',location:'Albert Park, Melbourne, Australia 🇦🇺',dates:'6–8 Mar',
+    race:'1. Russell (Merc)  ·  2. Antonelli (Merc)  ·  3. Leclerc (Ferrari)  ·  4. Hamilton (Ferrari)',
+    comment:'Russell & Leclerc swapped the lead 7 times. Ferrari\'s VSC gamble backfired. Piastri crashed on his formation lap — heartbreak for the home crowd.',
+    status:'DONE',raceUTC:'2026-03-08T05:00'}},
+{id:'w1',label:'6–8 Mar',wkLabel:'Wk 8 Mar',tag:'past',
+  superRugby:{round:'Round 4',comment:'Hurricanes demolished Waratahs 59–19. Blues beat Crusaders. Reds snuck past Brumbies in a late escape.',
+    games:[
+      {home:'Chiefs',hs:57,away:'Moana Pasifika',as:24,utc:'2026-03-06T07:05',venue:'FMG Stadium Waikato',city:'Hamilton',country:'NZ',flag:'🇳🇿'},
+      {home:'Waratahs',hs:19,away:'Hurricanes',as:59,utc:'2026-03-06T08:35',venue:'Allianz Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺'},
+      {home:'Highlanders',hs:39,away:'W. Force',as:31,utc:'2026-03-07T07:05',venue:'Forsyth Barr Stadium',city:'Dunedin',country:'NZ',flag:'🇳🇿'},
+      {home:'Blues',hs:29,away:'Crusaders',as:13,utc:'2026-03-07T07:05',venue:'Eden Park',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+      {home:'Brumbies',hs:31,away:'Reds',as:34,utc:'2026-03-07T09:35',venue:'GIO Stadium',city:'Canberra',country:'AUS',flag:'🇦🇺'},
+    ]},
+  nrl:{round:'Round 1 — Australia leg',warriors:{hs:42,as:18,opp:'Roosters',result:'WIN'},
+    comment:'Warriors scorched the Roosters 42–18 at Go Media. Tanah Boyd ran the show, Leka Halasima powered over for a double. Statement win.',
+    games:[
+      {home:'Warriors',hs:42,away:'Roosters',as:18,utc:'2026-03-06T08:00',venue:'Go Media Stadium (Mt Smart)',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+    ]},
+  aLeague:{games:[
+    {home:'Auckland FC',hs:3,away:'Melbourne City',as:1,utc:'2026-02-28T06:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+    {home:'Auckland FC',hs:2,away:'Perth Glory',as:2,utc:'2026-03-08T04:00',venue:'Go Media Stadium',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+  ]},
+  f1:{round:'R1 — Australian GP',location:'Albert Park, Melbourne, Australia 🇦🇺',dates:'6–8 Mar',
+    race:'1. Russell (Merc)  ·  2. Antonelli (Merc)  ·  3. Leclerc (Ferrari)  ·  4. Hamilton (Ferrari)',
+    comment:'Russell & Leclerc swapped the lead 7 times. Ferrari\'s VSC gamble backfired. Piastri crashed on his formation lap — heartbreak for the home crowd.',
+    status:'DONE',raceUTC:'2026-03-08T05:00'}},
+{id:'w2',label:'13–15 Mar',wkLabel:'Wk 15 Mar ★',tag:'current',
+  superRugby:{round:'Round 5',comment:'Drua hammered Brumbies 42–27 in Ba — their first-ever win in that town. Crusaders held off Highlanders. Reds won a gritty derby. Blues v Moana Pasifika live now.',
+    games:[
+      {home:'Hurricanes',hs:31,away:'W. Force',as:23,utc:'2026-03-13T06:05',venue:'McLean Park',city:'Napier',country:'NZ',flag:'🇳🇿'},
+      {home:'Fijian Drua',hs:42,away:'Brumbies',as:27,utc:'2026-03-14T04:35',venue:'4R Electrical Govind Park',city:'Ba',country:'Fiji',flag:'🇫🇯'},
+      {home:'Crusaders',hs:29,away:'Highlanders',as:18,utc:'2026-03-14T07:05',venue:'Apollo Projects Stadium',city:'Christchurch',country:'NZ',flag:'🇳🇿'},
+      {home:'Reds',hs:26,away:'Waratahs',as:10,utc:'2026-03-14T08:35',venue:'Suncorp Stadium',city:'Brisbane',country:'AUS',flag:'🇦🇺'},
+      {home:'Blues',hs:null,away:'Moana Pasifika',as:null,utc:'2026-03-15T02:35',venue:'Eden Park',city:'Auckland',country:'NZ',flag:'🇳🇿',live:true},
+    ]},
+  nrl:{round:'Round 2',warriors:{hs:40,as:6,opp:'Raiders',result:'WIN'},
+    comment:'Warriors 2-0! They dismantled the Raiders 40–6 with a stunning 34-0 second half. Warriors haven\'t started 2-0 since 2018. The Wahs are flying.',
+    games:[
+      {home:'Warriors',hs:40,away:'Raiders',as:6,utc:'2026-03-13T08:00',venue:'Go Media Stadium (Mt Smart)',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+    ]},
+  aLeague:{games:[
+    {home:'Newcastle Jets',hs:1,away:'Auckland FC',as:2,utc:'2026-03-13T22:00',venue:'McDonald Jones Stadium',city:'Newcastle, NSW',country:'AUS',flag:'🇦🇺'},
+  ],comment:'Sam Cosgrove brace seals it — Auckland just 1pt behind Newcastle with 5 to play. Title race ON.'},
+  f1:{round:'R2 — Chinese GP',location:'Shanghai International Circuit, China 🇨🇳',dates:'13–15 Mar',
+    sprint:'Sprint (Sat 14): 1. Russell · 2. Leclerc · 3. Hamilton · 4. Norris · 5. Antonelli',
+    race:'Qualifying: Antonelli POLE — youngest ever F1 pole (age 19!). Grid: Antonelli P1, Russell P2, Hamilton P3, Leclerc P4. Race on NOW.',
+    comment:'Incredible Sprint — Russell & Hamilton swapped the lead 6 times. Bielle-Biarrey of racing! Antonelli stole pole from Russell in qualifying despite a gearbox drama. Today\'s main race is on.',
+    status:'LIVE WEEKEND',raceUTC:'2026-03-15T07:00',sprintUTC:'2026-03-14T03:00',qualUTC:'2026-03-14T07:00'}},
+{id:'w3',label:'20–22 Mar',wkLabel:'Wk 22 Mar',tag:'future',
+  superRugby:{round:'Round 6',games:[
+    {home:'Highlanders',hs:null,away:'Hurricanes',as:null,utc:'2026-03-20T07:05',venue:'Forsyth Barr Stadium',city:'Dunedin',country:'NZ',flag:'🇳🇿'},
+    {home:'Brumbies',hs:null,away:'Chiefs',as:null,utc:'2026-03-20T09:35',venue:'GIO Stadium',city:'Canberra',country:'AUS',flag:'🇦🇺'},
+    {home:'Fijian Drua',hs:null,away:'Reds',as:null,utc:'2026-03-21T04:35',venue:'Churchill Park',city:'Lautoka',country:'Fiji',flag:'🇫🇯'},
+    {home:'Moana Pasifika',hs:null,away:'Crusaders',as:null,utc:'2026-03-21T07:05',venue:'North Harbour Stadium',city:'Albany, Auckland',country:'NZ',flag:'🇳🇿'},
+    {home:'Waratahs',hs:null,away:'Blues',as:null,utc:'2026-03-21T09:35',venue:'Allianz Stadium',city:'Sydney',country:'AUS',flag:'🇦🇺'},
+  ]},
+  nrl:{round:'Round 3',warriors:{hs:null,as:null,opp:'Knights',result:null},
+    comment:'Warriors head to Newcastle to face the Knights at McDonald Jones. Tough away game — first road test of 2026.',
+    games:[
+      {home:'Knights',hs:null,away:'Warriors',as:null,utc:'2026-03-21T04:00',venue:'McDonald Jones Stadium',city:'Newcastle, NSW',country:'AUS',flag:'🇦🇺'},
+    ]},
+  aLeague:{games:[
+    {home:'Auckland FC',hs:null,away:'TBC',as:null,utc:null,venue:'TBC',city:'TBC',country:'TBC',flag:'🏟️'},
+  ]},
+  f1:{round:'R3 — Japanese GP',location:'Suzuka Circuit, Suzuka, Japan 🇯🇵',dates:'27–29 Mar',
+    comment:'Suzuka — the temple of speed. After Mercedes dominance in Shanghai and Melbourne, all eyes on whether Ferrari or McLaren can fight back at a circuit that favours clean aero.',
+    status:'UPCOMING',raceUTC:'2026-03-29T05:00'}},
+{id:'w4',label:'27–29 Mar',wkLabel:'Wk 29 Mar',tag:'future',
+  superRugby:{round:'Round 7',games:[
+    {home:'Moana Pasifika',hs:null,away:'Highlanders',as:null,utc:'2026-03-27T07:05',venue:'North Harbour Stadium',city:'Albany, Auckland',country:'NZ',flag:'🇳🇿'},
+    {home:'Hurricanes',hs:null,away:'Reds',as:null,utc:'2026-03-28T04:35',venue:'Sky Stadium',city:'Wellington',country:'NZ',flag:'🇳🇿'},
+    {home:'Blues',hs:null,away:'Fijian Drua',as:null,utc:'2026-03-28T07:05',venue:'Eden Park',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+    {home:'W. Force',hs:null,away:'Chiefs',as:null,utc:'2026-03-28T09:35',venue:'HBF Park',city:'Perth',country:'AUS',flag:'🇦🇺'},
+  ]},
+  nrl:{round:'Round 4',warriors:{hs:null,as:null,opp:'Wests Tigers',result:null},
+    comment:'Warriors back home at Go Media to host the Tigers. Should be a chance to keep the unbeaten run going.',
+    games:[
+      {home:'Warriors',hs:null,away:'Wests Tigers',as:null,utc:'2026-03-27T10:00',venue:'Go Media Stadium (Mt Smart)',city:'Auckland',country:'NZ',flag:'🇳🇿'},
+    ]},
+  aLeague:{games:[
+    {home:'Auckland FC',hs:null,away:'TBC',as:null,utc:null,venue:'TBC',city:'TBC',country:'TBC',flag:'🏟️'},
+  ]},
+  f1:{round:'R3 — Japanese GP',location:'Suzuka Circuit, Suzuka, Japan 🇯🇵',dates:'27–29 Mar',
+    comment:'Suzuka race weekend — Japan GP. Russell defending his early championship lead.',
+    status:'UPCOMING',raceUTC:'2026-03-29T05:00'}}
+];
+
+
+// ─── F1 2026 FULL CALENDAR ──────────────────────────────────────────────────
+// Keyed by race-day ISO date for easy weekend matching
+const F1_CALENDAR = {
+  '2026-04-12':{round:'R4 — Bahrain GP',location:'Bahrain International Circuit, Sakhir 🇧🇭',dates:'10–12 Apr',status:'UPCOMING',raceUTC:'2026-04-12T15:00'},
+  '2026-04-19':{round:'R5 — Saudi Arabian GP',location:'Jeddah Corniche Circuit, Jeddah 🇸🇦',dates:'17–19 Apr',status:'UPCOMING',raceUTC:'2026-04-19T17:00'},
+  '2026-05-03':{round:'R6 — Miami GP',location:'Miami International Autodrome, Miami 🇺🇸',dates:'1–3 May',status:'UPCOMING',raceUTC:'2026-05-03T20:00',sprint:true},
+  '2026-05-24':{round:'R7 — Canadian GP',location:'Circuit Gilles-Villeneuve, Montréal 🇨🇦',dates:'22–24 May',status:'UPCOMING',raceUTC:'2026-05-24T18:00',sprint:true},
+  '2026-06-07':{round:'R8 — Monaco GP',location:'Circuit de Monaco, Monte Carlo 🇲🇨',dates:'5–7 Jun',status:'UPCOMING',raceUTC:'2026-06-07T13:00'},
+  '2026-06-14':{round:'R9 — Barcelona GP',location:'Circuit de Barcelona-Catalunya, Spain 🇪🇸',dates:'12–14 Jun',status:'UPCOMING',raceUTC:'2026-06-14T13:00'},
+  '2026-06-28':{round:'R10 — Austrian GP',location:'Red Bull Ring, Spielberg 🇦🇹',dates:'26–28 Jun',status:'UPCOMING',raceUTC:'2026-06-28T13:00'},
+  '2026-07-05':{round:'R11 — British GP',location:'Silverstone Circuit, Silverstone 🇬🇧',dates:'3–5 Jul',status:'UPCOMING',raceUTC:'2026-07-05T14:00',sprint:true},
+  '2026-07-19':{round:'R12 — Belgian GP',location:'Circuit de Spa-Francorchamps, Spa 🇧🇪',dates:'17–19 Jul',status:'UPCOMING',raceUTC:'2026-07-19T13:00'},
+  '2026-07-26':{round:'R13 — Hungarian GP',location:'Hungaroring, Budapest 🇭🇺',dates:'24–26 Jul',status:'UPCOMING',raceUTC:'2026-07-26T13:00'},
+  '2026-08-23':{round:'R14 — Dutch GP',location:'Circuit Zandvoort, Zandvoort 🇳🇱',dates:'21–23 Aug',status:'UPCOMING',raceUTC:'2026-08-23T13:00',sprint:true},
+  '2026-09-06':{round:'R15 — Italian GP',location:'Autodromo Nazionale Monza, Monza 🇮🇹',dates:'4–6 Sep',status:'UPCOMING',raceUTC:'2026-09-06T13:00'},
+  '2026-09-13':{round:'R16 — Spanish GP',location:'Circuito de Madrid, Madrid 🇪🇸',dates:'11–13 Sep',status:'UPCOMING',raceUTC:'2026-09-13T13:00'},
+  '2026-09-26':{round:'R17 — Azerbaijan GP',location:'Baku City Circuit, Baku 🇦🇿',dates:'24–26 Sep',status:'UPCOMING',raceUTC:'2026-09-26T11:00'},
+  '2026-10-11':{round:'R18 — Singapore GP',location:'Marina Bay Street Circuit, Singapore 🇸🇬',dates:'9–11 Oct',status:'UPCOMING',raceUTC:'2026-10-11T12:00',sprint:true},
+  '2026-10-25':{round:'R19 — United States GP',location:'Circuit of the Americas, Austin 🇺🇸',dates:'23–25 Oct',status:'UPCOMING',raceUTC:'2026-10-25T19:00'},
+  '2026-11-01':{round:'R20 — Mexico City GP',location:'Autódromo Hermanos Rodríguez, Mexico City 🇲🇽',dates:'31 Oct–1 Nov',status:'UPCOMING',raceUTC:'2026-11-01T20:00'},
+  '2026-11-08':{round:'R21 — Brazilian GP',location:'Autódromo José Carlos Pace, São Paulo 🇧🇷',dates:'6–8 Nov',status:'UPCOMING',raceUTC:'2026-11-08T17:00'},
+  '2026-11-22':{round:'R22 — Las Vegas GP',location:'Las Vegas Street Circuit, Las Vegas 🇺🇸',dates:'20–22 Nov',status:'UPCOMING',raceUTC:'2026-11-22T06:00'},
+  '2026-11-29':{round:'R23 — Qatar GP',location:'Lusail International Circuit, Lusail 🇶🇦',dates:'27–29 Nov',status:'UPCOMING',raceUTC:'2026-11-29T14:00',sprint:true},
+  '2026-12-06':{round:'R24 — Abu Dhabi GP',location:'Yas Marina Circuit, Abu Dhabi 🇦🇪',dates:'4–6 Dec',status:'UPCOMING',raceUTC:'2026-12-06T13:00'},
+};
+
+// ─── GENERATE REMAINING WEEKENDS (APR–DEC 2026) ───────────────────────────
+(function(){
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let d=new Date(2026,3,3); // Start Fri 3 Apr
+  const end=new Date(2026,11,28); // End ~28 Dec
+  let idx=WEEKENDS.length;
+  while(d<=end){
+    const fri=new Date(d);
+    const sun=new Date(d); sun.setDate(sun.getDate()+2);
+    const fD=fri.getDate(),sD=sun.getDate(),fM=fri.getMonth(),sM=sun.getMonth();
+    const label=fM===sM?`${fD}–${sD} ${months[fM]}`:`${fD} ${months[fM]}–${sD} ${months[sM]}`;
+    const wkLabel=`Wk ${sD} ${months[sM]}`;
+    // Match NRL game to this weekend
+    const friISO=fri.toISOString().split('T')[0];
+    const sunISO=sun.toISOString().split('T')[0];
+    let nrlData=null;
+    for(const g of NRL_FULL_SEASON){
+      if(!g.utc)continue;
+      const gd=g.utc.split('T')[0];
+      if(gd>=friISO&&gd<=sunISO){
+        if(g.bye){nrlData={round:g.round,bye:true,note:'Warriors bye week',games:[]};}
+        else{
+          const isHome=g.home==='Warriors';
+          const opp=isHome?g.away:g.home;
+          const res=g.hs!=null?(isHome?(g.hs>g.as?'WIN':'LOSS'):(g.as>g.hs?'WIN':'LOSS')):null;
+          nrlData={round:g.round,warriors:{hs:g.hs,as:g.as,opp:opp,result:res},games:[g]};
+        }
+        break;
+      }
+    }
+    // Check for NRL bye weeks that span this weekend (byes have no utc)
+    if(!nrlData){
+      for(const g of NRL_FULL_SEASON){
+        if(!g.bye||!g.date)continue;
+        // Bye dates like "10–11 May" — check if weekend overlaps
+        const m=g.date.match(/(\d+).*?(\w+)$/);
+        if(m){
+          const byeDay=parseInt(m[1]);
+          const byeMon=months.indexOf(m[2]);
+          if(byeMon>=0&&fM===byeMon&&fD<=byeDay+1&&sD>=byeDay-1){
+            nrlData={round:g.round,bye:true,note:'Warriors bye week',games:[]};
+            break;
+          }
+        }
+      }
+    }
+    // Match F1 race to this weekend (check Fri through Mon for Sat/Sun races)
+    let f1Data=null;
+    for(let dd=0;dd<=3;dd++){
+      const chk=new Date(fri);chk.setDate(chk.getDate()+dd);
+      const chkISO=chk.toISOString().split('T')[0];
+      if(F1_CALENDAR[chkISO]){f1Data=F1_CALENDAR[chkISO];break;}
+    }
+    WEEKENDS.push({id:'w'+idx,label:label,wkLabel:wkLabel,tag:'future',
+      superRugby:null,nrl:nrlData,aLeague:null,f1:f1Data});
+    idx++;
+    d.setDate(d.getDate()+7);
+  }
+})();
+
+
+// ── TEAM LOGOS (favicons from official sites) ────────────────────────────────
+const TEAM_LOGOS = {
+  'All Blacks':'https://www.google.com/s2/favicons?domain=allblacks.com&sz=32',
+  'Wallabies':'https://www.google.com/s2/favicons?domain=wallabies.rugby&sz=32',
+  'Springboks':'https://www.google.com/s2/favicons?domain=springboks.rugby&sz=32',
+  'Six Nations':'https://www.google.com/s2/favicons?domain=sixnationsrugby.com&sz=32',
+  'Super Rugby':'https://www.google.com/s2/favicons?domain=superrugby.co.nz&sz=32',
+  'RWC 2027':'https://www.google.com/s2/favicons?domain=rugbyworldcup.com&sz=32',
+  'NRL':'https://www.google.com/s2/favicons?domain=nrl.com&sz=32',
+  'A-League':'https://www.google.com/s2/favicons?domain=aleagues.com.au&sz=32',
+  'F1':'https://www.google.com/s2/favicons?domain=formula1.com&sz=32',
+  'All Whites':'https://www.google.com/s2/favicons?domain=nzfootball.co.nz&sz=32',
+  'Socceroos':'https://www.google.com/s2/favicons?domain=socceroos.com.au&sz=32',
+};
+
+// ── 2027 RUGBY WORLD CUP — AUSTRALIA ────────────────────────────────────────
+// 24 teams · 52 matches · 1 Oct – 13 Nov 2027
+const TIER1=new Set(['Australia','New Zealand','South Africa','England','France','Ireland','Scotland','Wales','Italy','Argentina','Japan','Fiji']);
+const RWC_2027_POOLS = {
+  A:{label:'Pool A',accent:'#00c9ff',teams:['Australia','New Zealand','Chile','Hong Kong China'],matches:[
+    {n:1,date:'Fri 1 Oct',home:'Australia',away:'Hong Kong China',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-01T10:45',comp:'Pool A'},
+    {n:2,date:'Sat 2 Oct',home:'New Zealand',away:'Chile',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-02T05:15',comp:'Pool A'},
+    {n:3,date:'Sat 9 Oct',home:'Australia',away:'New Zealand',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-10-09T06:10',comp:'Pool A'},
+    {n:4,date:'Sat 9 Oct',home:'Chile',away:'Hong Kong China',hs:null,as:null,venue:'Nth Qld Stadium',city:'Townsville',utc:'2027-10-09T10:15',comp:'Pool A'},
+    {n:5,date:'Fri 15 Oct',home:'New Zealand',away:'Hong Kong China',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-15T06:15',comp:'Pool A'},
+    {n:6,date:'Sat 16 Oct',home:'Australia',away:'Chile',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-16T05:10',comp:'Pool A'},
+  ]},
+  B:{label:'Pool B',accent:'#00703c',teams:['South Africa','Italy','Georgia','Romania'],matches:[
+    {n:7,date:'Sun 3 Oct',home:'South Africa',away:'Italy',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-03T03:45',comp:'Pool B'},
+    {n:8,date:'Sun 3 Oct',home:'Georgia',away:'Romania',hs:null,as:null,venue:'Nth Qld Stadium',city:'Townsville',utc:'2027-10-03T10:15',comp:'Pool B'},
+    {n:9,date:'Sun 10 Oct',home:'South Africa',away:'Georgia',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-10T06:45',comp:'Pool B'},
+    {n:10,date:'Mon 11 Oct',home:'Italy',away:'Romania',hs:null,as:null,venue:'Sydney Football Stadium',city:'Sydney',utc:'2027-10-11T08:45',comp:'Pool B'},
+    {n:11,date:'Sun 17 Oct',home:'Italy',away:'Georgia',hs:null,as:null,venue:'Newcastle Stadium',city:'Newcastle',utc:'2027-10-17T01:15',comp:'Pool B'},
+    {n:12,date:'Sun 17 Oct',home:'South Africa',away:'Romania',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-17T11:15',comp:'Pool B'},
+  ]},
+  C:{label:'Pool C',accent:'#4fc3f7',teams:['Argentina','Fiji','Spain','Canada'],matches:[
+    {n:13,date:'Mon 4 Oct',home:'Fiji',away:'Spain',hs:null,as:null,venue:'Newcastle Stadium',city:'Newcastle',utc:'2027-10-04T03:15',comp:'Pool C'},
+    {n:14,date:'Mon 4 Oct',home:'Argentina',away:'Canada',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-04T08:45',comp:'Pool C'},
+    {n:15,date:'Sun 10 Oct',home:'Fiji',away:'Canada',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-10T01:45',comp:'Pool C'},
+    {n:16,date:'Sun 10 Oct',home:'Argentina',away:'Spain',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-10T04:15',comp:'Pool C'},
+    {n:17,date:'Sat 16 Oct',home:'Argentina',away:'Fiji',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-16T02:45',comp:'Pool C'},
+    {n:18,date:'Sat 16 Oct',home:'Spain',away:'Canada',hs:null,as:null,venue:'Nth Qld Stadium',city:'Townsville',utc:'2027-10-16T10:15',comp:'Pool C'},
+  ]},
+  D:{label:'Pool D',accent:'#66bb6a',teams:['Ireland','Scotland','Uruguay','Portugal'],matches:[
+    {n:19,date:'Sun 3 Oct',home:'Scotland',away:'Uruguay',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-03T06:15',comp:'Pool D'},
+    {n:20,date:'Mon 4 Oct',home:'Ireland',away:'Portugal',hs:null,as:null,venue:'Sydney Football Stadium',city:'Sydney',utc:'2027-10-04T06:15',comp:'Pool D'},
+    {n:21,date:'Sun 10 Oct',home:'Ireland',away:'Scotland',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-10T09:45',comp:'Pool D'},
+    {n:22,date:'Mon 11 Oct',home:'Uruguay',away:'Portugal',hs:null,as:null,venue:'Newcastle Stadium',city:'Newcastle',utc:'2027-10-11T06:15',comp:'Pool D'},
+    {n:23,date:'Sun 17 Oct',home:'Ireland',away:'Uruguay',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-17T03:45',comp:'Pool D'},
+    {n:24,date:'Sun 17 Oct',home:'Scotland',away:'Portugal',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-17T06:15',comp:'Pool D'},
+  ]},
+  E:{label:'Pool E',accent:'#ef5350',teams:['France','Japan','USA','Samoa'],matches:[
+    {n:25,date:'Sat 2 Oct',home:'France',away:'USA',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-02T07:45',comp:'Pool E'},
+    {n:26,date:'Sun 3 Oct',home:'Japan',away:'Samoa',hs:null,as:null,venue:'Newcastle Stadium',city:'Newcastle',utc:'2027-10-03T01:15',comp:'Pool E'},
+    {n:27,date:'Sat 9 Oct',home:'USA',away:'Samoa',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-09T04:15',comp:'Pool E'},
+    {n:28,date:'Sat 9 Oct',home:'France',away:'Japan',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-09T08:45',comp:'Pool E'},
+    {n:29,date:'Fri 15 Oct',home:'Japan',away:'USA',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-15T09:30',comp:'Pool E'},
+    {n:30,date:'Sun 17 Oct',home:'France',away:'Samoa',hs:null,as:null,venue:'Sydney Football Stadium',city:'Sydney',utc:'2027-10-17T08:45',comp:'Pool E'},
+  ]},
+  F:{label:'Pool F',accent:'#ffa726',teams:['England','Wales','Tonga','Zimbabwe'],matches:[
+    {n:31,date:'Sat 2 Oct',home:'Wales',away:'Zimbabwe',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-02T02:45',comp:'Pool F'},
+    {n:32,date:'Sat 2 Oct',home:'England',away:'Tonga',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-02T10:15',comp:'Pool F'},
+    {n:33,date:'Fri 8 Oct',home:'Wales',away:'Tonga',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-08T07:15',comp:'Pool F'},
+    {n:34,date:'Fri 8 Oct',home:'England',away:'Zimbabwe',hs:null,as:null,venue:'Adelaide Oval',city:'Adelaide',utc:'2027-10-08T09:45',comp:'Pool F'},
+    {n:35,date:'Fri 15 Oct',home:'Tonga',away:'Zimbabwe',hs:null,as:null,venue:'Nth Qld Stadium',city:'Townsville',utc:'2027-10-15T10:15',comp:'Pool F'},
+    {n:36,date:'Sat 16 Oct',home:'England',away:'Wales',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-10-16T08:45',comp:'Pool F'},
+  ]},
+};
+const RWC_2027_KNOCKOUTS = [
+  {n:37,date:'Sat 23 Oct',home:'2C',away:'2F',hs:null,as:null,venue:'Sydney Football Stadium',city:'Sydney',utc:'2027-10-23T03:15',comp:'Round of 16'},
+  {n:38,date:'Sat 23 Oct',home:'1A',away:'3rd C/E/F',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-23T05:45',comp:'Round of 16'},
+  {n:39,date:'Sat 23 Oct',home:'1E',away:'2D',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-23T08:15',comp:'Round of 16'},
+  {n:40,date:'Sat 23 Oct',home:'1B',away:'3rd D/E/F',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-23T10:45',comp:'Round of 16'},
+  {n:41,date:'Sun 24 Oct',home:'1C',away:'3rd A/E/F',hs:null,as:null,venue:'Sydney Football Stadium',city:'Sydney',utc:'2027-10-24T03:15',comp:'Round of 16'},
+  {n:42,date:'Sun 24 Oct',home:'1D',away:'3rd B/E/F',hs:null,as:null,venue:'Docklands Stadium',city:'Melbourne',utc:'2027-10-24T05:45',comp:'Round of 16'},
+  {n:43,date:'Sun 24 Oct',home:'2A',away:'2E',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-24T08:15',comp:'Round of 16'},
+  {n:44,date:'Sun 24 Oct',home:'1F',away:'2B',hs:null,as:null,venue:'Perth Stadium',city:'Perth',utc:'2027-10-24T10:45',comp:'Round of 16'},
+  {n:45,date:'Sat 30 Oct',home:'W38',away:'W40',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-10-30T05:45',comp:'Quarter-Final'},
+  {n:46,date:'Sat 30 Oct',home:'W37',away:'W39',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-30T08:45',comp:'Quarter-Final'},
+  {n:47,date:'Sun 31 Oct',home:'W41',away:'W42',hs:null,as:null,venue:'Brisbane Stadium',city:'Brisbane',utc:'2027-10-31T06:00',comp:'Quarter-Final'},
+  {n:48,date:'Sun 31 Oct',home:'W43',away:'W44',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-10-31T09:00',comp:'Quarter-Final'},
+  {n:49,date:'Fri 5 Nov',home:'W(QF1)',away:'W(QF2)',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-11-05T09:00',comp:'Semi-Final'},
+  {n:50,date:'Sat 6 Nov',home:'W(QF3)',away:'W(QF4)',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-11-06T09:00',comp:'Semi-Final'},
+  {n:51,date:'Fri 12 Nov',home:'L(SF1)',away:'L(SF2)',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-11-12T08:45',comp:'Bronze Final'},
+  {n:52,date:'Sat 13 Nov',home:'W(SF1)',away:'W(SF2)',hs:null,as:null,venue:'Stadium Australia',city:'Sydney',utc:'2027-11-13T09:00',comp:'Final'},
+];
+
+// All Whites — FIFA World Cup 2026 (Group G: Belgium, Egypt, Iran)
+const ALL_WHITES_WC = [
+  {date:'Tue 16 Jun',home:'New Zealand',hs:null,away:'Iran',as:null,venue:'SoFi Stadium',city:'Los Angeles',country:'USA',flag:'🇺🇸',utc:'2026-06-16T01:00',comp:'Group G'},
+  {date:'Mon 22 Jun',home:'Egypt',hs:null,away:'New Zealand',as:null,venue:'BC Place',city:'Vancouver',country:'Canada',flag:'🇨🇦',utc:'2026-06-22T01:00',comp:'Group G'},
+  {date:'Sat 27 Jun',home:'New Zealand',hs:null,away:'Belgium',as:null,venue:'BC Place',city:'Vancouver',country:'Canada',flag:'🇨🇦',utc:'2026-06-27T03:00',comp:'Group G'},
+];
+
+// Socceroos — FIFA World Cup 2026 (Group D: USA, Paraguay, UEFA Playoff C winner)
+const SOCCEROOS_WC = [
+  {date:'Sat 14 Jun',home:'Australia',hs:null,away:'UEFA Playoff C Winner',as:null,venue:'BC Place',city:'Vancouver',country:'Canada',flag:'🇨🇦',utc:'2026-06-14T01:00',comp:'Group D'},
+  {date:'Fri 20 Jun',home:'USA',hs:null,away:'Australia',as:null,venue:'Seattle Stadium',city:'Seattle',country:'USA',flag:'🇺🇸',utc:'2026-06-19T19:00',comp:'Group D'},
+  {date:'Thu 26 Jun',home:'Paraguay',hs:null,away:'Australia',as:null,venue:'Levi\'s Stadium',city:'Santa Clara',country:'USA',flag:'🇺🇸',utc:'2026-06-26T02:00',comp:'Group D'},
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let wk=2, showNRL=true, showF1=true;
+let showRugby=true, rugbyAll=true, rugbySR=false, rugbyAB=false, rugbyWAL=false, rugbySB=false, rugby6N=false;
+let showFootball=true, footAll=true, footAL=false, footAW=false, footSOC=false;
+let timeView='week'; // 'week' | '2026' | '2027'
+let showHistory=false; // History toggle
+let rugbyRWC=false; // RWC sub-filter
+let showRWCT2=false; // Tier 2 toggle for RWC — show all matches incl tier 2 vs tier 2 — show all results to date
+const TC={past:'#888',current:'#00c9ff',future:'#b0ff4e'};
+const TL={past:'Past',current:'This Weekend',future:'Upcoming'};
+
+function toggleRugbyFilter(which){
+  if(which==='ALL'){
+    rugbyAll=true; rugbySR=false; rugbyAB=false; rugbyWAL=false; rugbySB=false; rugby6N=false; rugbyRWC=false;
+  } else {
+    if(rugbyAll){
+      rugbyAll=false;
+      rugbySR=which==='SR'; rugbyAB=which==='AB'; rugbyWAL=which==='WAL'; rugbySB=which==='SB'; rugby6N=which==='6N'; rugbyRWC=which==='RWC';
+    } else {
+      if(which==='SR') rugbySR=!rugbySR;
+      if(which==='AB') rugbyAB=!rugbyAB;
+      if(which==='WAL') rugbyWAL=!rugbyWAL;
+      if(which==='SB') rugbySB=!rugbySB;
+      if(which==='6N') rugby6N=!rugby6N;
+      if(which==='RWC') rugbyRWC=!rugbyRWC;
+      if(!rugbySR&&!rugbyAB&&!rugbyWAL&&!rugbySB&&!rugby6N&&!rugbyRWC) rugbyAll=true;
+    }
+  }
+  render();
+}
+
+function toggleFootballFilter(which){
+  if(which==='ALL'){
+    footAll=true; footAL=false; footAW=false; footSOC=false;
+  } else {
+    if(footAll){
+      footAll=false;
+      footAL=which==='AL'; footAW=which==='AW'; footSOC=which==='SOC';
+    } else {
+      if(which==='AL') footAL=!footAL;
+      if(which==='AW') footAW=!footAW;
+      if(which==='SOC') footSOC=!footSOC;
+      if(!footAL&&!footAW&&!footSOC) footAll=true;
+    }
+  }
+  render();
+}
+
+// ─── DOM BUILDER ───────────────────────────────────────────────────────────
+function el(tag,attrs,...ch){
+  const e=document.createElement(tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='className')e.className=v;
+    else if(k==='style')Object.assign(e.style,v);
+    else if(k==='html')e.innerHTML=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2).toLowerCase(),v);
+    else e.setAttribute(k,v);
+  });
+  ch.flat().forEach(c=>{if(c!=null)e.appendChild(typeof c==='string'?document.createTextNode(c):c)});
+  return e;
+}
+function pill(txt,color,pulse){
+  return el('span',{className:'pill',style:{background:pulse?color:color+'22',color:pulse?'#fff':color,border:`1px solid ${color}55`,animation:pulse?'pulse 1.5s infinite':'none'}},txt);
+}
+function tzRow(utc){
+  if(!utc) return el('span',{style:{fontSize:'11px',color:'#444'}},'Time TBC');
+  const w=el('div',{className:'tzbadges'});
+  mkTZ(utc).forEach(b=>w.appendChild(el('span',{className:'tzb',style:{background:b.c+'22',color:b.c,border:`1px solid ${b.c}44`}},`${b.t} ${b.l}`)));
+  return w;
+}
+function venueEl(v){
+  return el('div',{className:'venue-t'},el('span',{},v.flag||'📍'),el('span',{},`${v.venue} · ${v.city}, ${v.country}`));
+}
+function comment(txt){
+  return txt?el('div',{className:'comment'},'💬 '+txt):null;
+}
+function secHead(emoji,title,color,sub){
+  const h=el('div',{className:'sec-head'});
+  h.appendChild(el('span',{className:'sec-emoji'},emoji));
+  const t=el('div',{className:'sec-titles'});
+  t.appendChild(el('div',{className:'sec-title'},title));
+  if(sub)t.appendChild(el('div',{className:'sec-sub'},sub));
+  h.appendChild(t);
+  h.appendChild(el('div',{className:'sec-line',style:{background:`linear-gradient(to right,${color}50,transparent)`}}));
+  return h;
+}
+function card(accent,delay,...ch){
+  const c=el('div',{className:'card',style:{border:`1px solid ${accent}22`,animationDelay:`${delay}ms`}});
+  ch.flat().forEach(x=>x&&c.appendChild(x));
+  return c;
+}
+
+// ─── GAME ROW ──────────────────────────────────────────────────────────────
+function gameRow(g,accent){
+  const done=g.hs!=null&&!g.live;
+  const live=!!g.live;
+  const cls=`gr ${done?'done':live?'live':'upcoming'}`;
+  const row=el('div',{className:cls,style:{borderLeftColor:done?accent+'88':live?'#ff4444':accent+'33'}});
+  const top=el('div',{className:'gr-top'});
+  const score=done?`${g.hs} – ${g.as}`:live?'LIVE NOW':'KO';
+  top.appendChild(el('span',{className:`tn${done||live?' a':''}`},g.home));
+  top.appendChild(el('div',{className:'sb',style:{color:done?'#fff':'#555'}},score));
+  top.appendChild(el('span',{className:`tn${done||live?' a':''}`},g.away));
+  if(done)top.appendChild(pill('FT','#555'));
+  if(live)top.appendChild(pill('LIVE','#ff4444',true));
+  row.appendChild(top);
+  const meta=el('div',{className:'gr-meta'});
+  // Date label
+  const dateStr=g.date||utcToDate(g.utc);
+  if(dateStr) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+dateStr));
+  meta.appendChild(venueEl(g));
+  meta.appendChild(el('div',{style:{flex:'1'}}));
+  meta.appendChild(tzRow(g.utc));
+  row.appendChild(meta);
+  return row;
+}
+
+// ─── STANDINGS TABLE ───────────────────────────────────────────────────────
+function standingsTable(rows,title,color){
+  const wrap=el('div',{style:{marginTop:'14px',paddingTop:'12px',borderTop:`1px solid ${color}22`}});
+  wrap.appendChild(el('div',{style:{fontSize:'11px',fontWeight:700,color:color,letterSpacing:'1px',marginBottom:'6px',textTransform:'uppercase'}},title));
+  const tbl=el('table',{className:'stbl'});
+  const hdr=el('tr');
+  ['#','Team','P','W','L','Diff','Pts'].forEach((h,i)=>{
+    hdr.appendChild(el('th',{className:i>1?'r':''},h));
+  });
+  tbl.appendChild(hdr);
+  rows.forEach(r=>{
+    const tr=el('tr',{className:r.champion?'champ':r.pos<=3?'top':''});
+    tr.appendChild(el('td',{className:'rank',style:{color:r.pos===1?'#ffd700':r.pos<=3?color:'#555'}},r.pos+''));
+    tr.appendChild(el('td',{},r.team+(r.champion?' 🏆':'')));
+    [r.p,r.w,r.l,r.diff].forEach(v=>tr.appendChild(el('td',{className:'r'},v+'')));
+    tr.appendChild(el('td',{className:'r pts'},r.pts+''));
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  return wrap;
+}
+
+// ─── SUPER RUGBY SECTION ───────────────────────────────────────────────────
+function superRugbySection(d,isPast){
+  if(!d)return null;
+  const c=card('#00c9ff',50);
+  c.appendChild(secHead('🏉','Super Rugby Pacific','#00c9ff',d.round));
+  d.games.forEach(g=>c.appendChild(gameRow(g,'#00c9ff')));
+  if(d.comment)c.appendChild(comment(d.comment));
+  if(isPast)c.appendChild(standingsTable(SUPER_RUGBY_TABLE,'Standings after Rd 4','#00c9ff'));
+  return c;
+}
+
+// ─── NRL SECTION (WEEKLY) ─────────────────────────────────────────────────
+function nrlSection(d){
+  if(!d)return null;
+  const c=card('#b0ff4e',80);
+  c.appendChild(secHead('⚔️','NRL — Warriors','#b0ff4e',d.round));
+  if(d.bye){c.appendChild(el('div',{className:'sec-sub',style:{padding:'8px 12px',background:'rgba(255,255,255,0.03)',borderRadius:'6px',fontStyle:'italic',color:'#666'}},'🏝️ '+d.note));}
+  else if(d.warriors){
+    const wh=el('div',{className:'w-hl'});
+    wh.appendChild(el('span',{style:{fontSize:'22px'}},d.warriors.result==='WIN'?'✅':'📅'));
+    const inf=el('div');
+    const sc=d.warriors.hs!=null?`${d.warriors.hs}–${d.warriors.as}`:'vs';
+    inf.appendChild(el('div',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'18px',color:'#fff'}},`Warriors ${sc} ${d.warriors.opp}`));
+    inf.appendChild(el('div',{style:{fontSize:'12px',color:d.warriors.result==='WIN'?'#b0ff4e':'#888'}},d.warriors.result==='WIN'?'✓ WIN 🔥':'Upcoming'));
+    wh.appendChild(inf); c.appendChild(wh);
+  }
+  d.games.forEach(g=>c.appendChild(gameRow(g,'#b0ff4e')));
+  if(d.comment)c.appendChild(comment(d.comment));
+  return c;
+}
+
+// ─── NRL SECTION (YEAR VIEW) ──────────────────────────────────────────────
+function nrlYearSection(){
+  const c=card('#b0ff4e',80);
+  c.appendChild(secHead('⚔️','NRL — Warriors 2026 Full Season','#b0ff4e','All 27 Rounds · Go Warriors!'));
+  const played=NRL_FULL_SEASON.filter(g=>!g.bye&&g.hs!=null);
+  const wins=played.filter(g=>{
+    const isHome=g.home==='Warriors';
+    return isHome?(g.hs>g.as):(g.as>g.hs);
+  }).length;
+  if(played.length>0){
+    const stat=el('div',{style:{display:'flex',gap:'14px',marginBottom:'12px',padding:'10px 14px',background:'rgba(176,255,78,0.06)',borderRadius:'8px',border:'1px solid rgba(176,255,78,0.15)',alignItems:'center'}});
+    stat.appendChild(el('span',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'18px',color:'#b0ff4e'}},`${wins}W – ${played.length-wins}L`));
+    stat.appendChild(el('span',{style:{fontSize:'13px',color:'#888'}},`${played.length} played · ${NRL_FULL_SEASON.filter(g=>!g.bye).length-played.length} remaining`));
+    c.appendChild(stat);
+  }
+  NRL_FULL_SEASON.forEach(g=>{
+    const roundLabel=g.round+(g.ha?(' · '+g.date+' · '+(g.ha==='H'?'🏠 HOME':'✈️ AWAY')):(g.bye?' · BYE WEEK':' · '+g.date));
+    c.appendChild(el('div',{className:'yr-round',style:{color:g.bye?'#555':'#b0ff4e'}},roundLabel));
+    if(g.bye){
+      c.appendChild(el('div',{className:'yr-bye'},'🏝️ Bye week'));
+      return;
+    }
+    c.appendChild(gameRow(g,'#b0ff4e'));
+  });
+  return c;
+}
+
+// ─── A-LEAGUE SECTION ──────────────────────────────────────────────────────
+function aLeagueSection(d){
+  if(!d)return null;
+  // Permanent filter: only show games involving Wellington Phoenix or Auckland FC
+  const tracked=['Wellington Phoenix','Auckland FC'];
+  const filtered=d.games.filter(g=>tracked.some(t=>g.home===t||g.away===t));
+  if(filtered.length===0&&!d.comment) return null;
+  const c=card('#ff6b35',110);
+  c.appendChild(secHead('⚽','A-League — NZ Teams','#ff6b35','Wellington Phoenix · Auckland FC'));
+  filtered.forEach(g=>c.appendChild(gameRow(g,'#ff6b35')));
+  if(d.comment)c.appendChild(comment(d.comment));
+  return c;
+}
+
+// ─── F1 SECTION ────────────────────────────────────────────────────────────
+function f1Section(d){
+  if(!d)return null;
+  const c=card('#ff1801',140);
+  c.appendChild(secHead('🏎️','Formula 1','#ff1801',`${d.round} · ${d.location}`));
+  const live=d.status==='LIVE WEEKEND';
+  const done=d.status==='DONE';
+  const sc=d.status==='UPCOMING'?'#ff1801':done?'#555':'#ff1801';
+  const blk=el('div',{className:'f1b',style:{background:live?'rgba(255,24,1,0.07)':'rgba(255,255,255,0.03)',border:`1px solid ${live?'rgba(255,24,1,0.3)':'rgba(255,255,255,0.07)'}`}});
+  const hdr=el('div',{style:{display:'flex',gap:'10px',alignItems:'center',marginBottom:'10px',flexWrap:'wrap'}});
+  hdr.appendChild(el('span',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'18px',color:'#fff'}},d.dates));
+  hdr.appendChild(pill(d.status,sc,live));
+  blk.appendChild(hdr);
+  if(d.raceUTC){const r=el('div',{className:'f1-row'});r.appendChild(el('span',{style:{minWidth:'65px'}},done?'Race was:':'Race KO:'));r.appendChild(tzRow(d.raceUTC));blk.appendChild(r);}
+  if(d.sprintUTC){const r=el('div',{className:'f1-row'});r.appendChild(el('span',{style:{minWidth:'65px'}},'Sprint KO:'));r.appendChild(tzRow(d.sprintUTC));blk.appendChild(r);}
+  if(d.qualUTC){const r=el('div',{className:'f1-row'});r.appendChild(el('span',{style:{minWidth:'65px'}},'Qual KO:'));r.appendChild(tzRow(d.qualUTC));blk.appendChild(r);}
+  const mkInfo=(lbl,txt)=>{const b=el('div',{style:{fontSize:'13px',color:'#ccc',marginTop:'7px',padding:'6px 10px',background:'rgba(255,255,255,0.04)',borderRadius:'6px'}});b.appendChild(el('span',{style:{color:'#aaa',fontWeight:700,marginRight:'6px'}},lbl));b.appendChild(document.createTextNode(txt));return b;};
+  if(d.sprint)blk.appendChild(mkInfo('Sprint:',d.sprint));
+  if(d.race)blk.appendChild(mkInfo(done?'Race result:':'Grid/Qual:',d.race));
+  if(!d.race&&!d.sprint)blk.appendChild(el('div',{style:{fontSize:'13px',color:'#666',fontStyle:'italic',marginTop:'4px'}},'Upcoming race weekend'));
+  c.appendChild(blk);
+  if(d.comment)c.appendChild(comment(d.comment));
+  return c;
+}
+
+// ─── SIX NATIONS SECTION ───────────────────────────────────────────────────
+function sixNationsSection(){
+  const c=card('#e8c53a',50);
+  const hdr6=secHead('🏆','Six Nations 2026','#e8c53a','5–14 Mar · COMPLETE');
+  if(TEAM_LOGOS['Six Nations']){const logo=document.createElement('img');logo.src=TEAM_LOGOS['Six Nations'];logo.width=18;logo.height=18;logo.style.cssText='border-radius:3px;margin-left:6px;vertical-align:middle;';hdr6.querySelector('.sec-title').appendChild(logo);}
+  c.appendChild(hdr6);
+  c.appendChild(comment('France win back-to-back titles on a LAST-KICK penalty by Thomas Ramos! England led 46–45 with 2 min to go after Tommy Freeman\'s brilliant 7th try. Ramos held his nerve for a 48–46 epic. Ireland beat Scotland to finish 2nd — Super Saturday for the ages.'));
+  const rounds={};
+  SIX_NATIONS_RESULTS.forEach(g=>{ if(!rounds[g.r])rounds[g.r]=[]; rounds[g.r].push(g); });
+  Object.entries(rounds).forEach(([rnd,games])=>{
+    c.appendChild(el('div',{style:{fontSize:'11px',fontWeight:700,color:'#666',letterSpacing:'1px',textTransform:'uppercase',padding:'8px 0 4px'}},rnd));
+    games.forEach(g=>{
+      const row=el('div',{className:'intl-gr',style:{borderLeftColor:'#e8c53a55'}});
+      const top=el('div',{className:'gr-top'});
+      top.appendChild(el('span',{className:'tn a'},g.home));
+      top.appendChild(el('div',{className:'sb',style:{color:'#fff'}},`${g.hs} – ${g.as}`));
+      top.appendChild(el('span',{className:'tn a'},g.away));
+      top.appendChild(pill('FT','#555'));
+      row.appendChild(top);
+      const meta=el('div',{className:'gr-meta'});
+      const dt6=utcToDate(g.utc);
+      if(dt6) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+dt6));
+      meta.appendChild(el('div',{className:'venue-t'},el('span',{},g.flag),el('span',{},`${g.venue} · ${g.city}, ${g.country}`)));
+      meta.appendChild(el('div',{style:{flex:'1'}}));
+      meta.appendChild(tzRow(g.utc));
+      row.appendChild(meta);
+      c.appendChild(row);
+    });
+  });
+  c.appendChild(standingsTable(SIX_NATIONS_TABLE,'Final Six Nations Standings','#e8c53a'));
+  return c;
+}
+
+// ─── INTL TESTS SECTION ───────────────────────────────────────────────────
+function intlSection(games,teamName,accent,emoji){
+  const c=card(accent,60);
+  const hdr=secHead(emoji,`${teamName} 2026 Tests`,accent,'Full Season Schedule');
+  if(TEAM_LOGOS[teamName]){const logo=document.createElement('img');logo.src=TEAM_LOGOS[teamName];logo.width=18;logo.height=18;logo.style.cssText='border-radius:3px;margin-left:6px;vertical-align:middle;';hdr.querySelector('.sec-title').appendChild(logo);}
+  c.appendChild(hdr);
+  let lastComp='';
+  games.forEach(g=>{
+    if(g.comp!==lastComp){
+      c.appendChild(el('div',{style:{fontSize:'11px',fontWeight:700,color:accent,letterSpacing:'1px',textTransform:'uppercase',padding:'8px 0 4px'}},g.comp));
+      lastComp=g.comp;
+    }
+    const done=g.hs!=null;
+    const row=el('div',{className:'intl-gr',style:{borderLeftColor:accent+'55',background:done?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.02)'}});
+    const top=el('div',{className:'gr-top'});
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.home));
+    const score=done?`${g.hs}–${g.as}`:g.date.split(' ').slice(1).join(' ');
+    top.appendChild(el('div',{className:'sb',style:{color:done?'#fff':'#444',fontSize:'17px'}},score));
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.away));
+    if(done)top.appendChild(pill('FT','#555'));
+    row.appendChild(top);
+    const meta=el('div',{className:'gr-meta'});
+    if(g.date) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+g.date));
+    meta.appendChild(el('div',{className:'venue-t'},el('span',{},g.flag),el('span',{},`${g.venue} · ${g.city}, ${g.country}`)));
+    meta.appendChild(el('div',{style:{flex:'1'}}));
+    meta.appendChild(tzRow(g.utc));
+    row.appendChild(meta);
+    c.appendChild(row);
+  });
+  return c;
+}
+
+// ─── WORLD CUP SECTION ─────────────────────────────────────────────────────
+function wcSection(games,teamName,accent,emoji,groupInfo){
+  const c=card(accent,70);
+  c.appendChild(secHead(emoji,`${teamName} — FIFA World Cup 2026`,accent,groupInfo));
+  let lastComp='';
+  games.forEach(g=>{
+    if(g.comp!==lastComp){
+      c.appendChild(el('div',{style:{fontSize:'11px',fontWeight:700,color:accent,letterSpacing:'1px',textTransform:'uppercase',padding:'8px 0 4px'}},g.comp));
+      lastComp=g.comp;
+    }
+    const done=g.hs!=null;
+    const row=el('div',{className:'intl-gr',style:{borderLeftColor:accent+'55',background:done?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.02)'}});
+    const top=el('div',{className:'gr-top'});
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.home));
+    const score=done?`${g.hs}–${g.as}`:g.date;
+    top.appendChild(el('div',{className:'sb',style:{color:done?'#fff':'#444',fontSize:'17px'}},score));
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.away));
+    if(done)top.appendChild(pill('FT','#555'));
+    row.appendChild(top);
+    const meta=el('div',{className:'gr-meta'});
+    if(g.date) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+g.date));
+    meta.appendChild(el('div',{className:'venue-t'},el('span',{},g.flag),el('span',{},`${g.venue} · ${g.city}, ${g.country}`)));
+    meta.appendChild(el('div',{style:{flex:'1'}}));
+    meta.appendChild(tzRow(g.utc));
+    row.appendChild(meta);
+    c.appendChild(row);
+  });
+  return c;
+}
+
+
+// ─── RWC 2027 SECTION ────────────────────────────────────────────────────────
+function rwc2027Section(){
+  const c=card('#ffa040',60);
+  const hd=secHead('🏆','Rugby World Cup 2027 — Australia','#ffa040','1 Oct – 13 Nov · 24 Teams · 52 Matches');
+  // Add RWC logo
+  if(TEAM_LOGOS['RWC 2027']){
+    const logo=document.createElement('img');
+    logo.src=TEAM_LOGOS['RWC 2027'];logo.width=20;logo.height=20;
+    logo.style.cssText='border-radius:4px;margin-left:6px;vertical-align:middle;';
+    hd.querySelector('.sec-title').appendChild(logo);
+  }
+  c.appendChild(hd);
+
+  // Tier 2 toggle
+  const t2Row=el('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px',flexWrap:'wrap'}});
+  t2Row.appendChild(el('span',{style:{fontSize:'11px',color:'#666'}},'Show:'));
+  const t2Btn=el('button',{className:`sfbtn${showRWCT2?' on':''}`,
+    style:showRWCT2?{borderColor:'#ffa040',background:'#ffa04020',color:'#ffa040'}:{},
+    onClick:()=>{showRWCT2=!showRWCT2;render();}});
+  t2Btn.textContent=showRWCT2?'✓ All Matches (incl Tier 2)':'Tier 1 Only';
+  t2Row.appendChild(t2Btn);
+  t2Row.appendChild(el('span',{style:{fontSize:'10px',color:'#555'}},showRWCT2?'Showing all 52 matches':'Hiding Tier 2 vs Tier 2 games'));
+  c.appendChild(t2Row);
+
+  // Pool stage
+  Object.entries(RWC_2027_POOLS).forEach(([key,pool])=>{
+    const poolHdr=el('div',{style:{fontSize:'12px',fontWeight:800,color:pool.accent,letterSpacing:'1.5px',textTransform:'uppercase',padding:'12px 0 4px',borderBottom:'1px solid '+pool.accent+'33',marginBottom:'8px'}},
+      pool.label+' · '+pool.teams.join(' · '));
+    c.appendChild(poolHdr);
+    pool.matches.forEach(g=>{
+      // Tier 2 filter: skip if both teams are tier 2
+      if(!showRWCT2 && !TIER1.has(g.home) && !TIER1.has(g.away)) return;
+      const done=g.hs!=null;
+      const row=el('div',{className:'intl-gr',style:{borderLeftColor:pool.accent+'55',background:done?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.02)'}});
+      const top=el('div',{className:'gr-top'});
+      top.appendChild(el('span',{className:`tn${done?' a':''}`},g.home));
+      const score=done?`${g.hs}–${g.as}`:g.date;
+      top.appendChild(el('div',{className:'sb',style:{color:done?'#fff':'#444',fontSize:'17px'}},score));
+      top.appendChild(el('span',{className:`tn${done?' a':''}`},g.away));
+      if(done)top.appendChild(pill('FT','#555'));
+      row.appendChild(top);
+      const meta=el('div',{className:'gr-meta'});
+      if(g.date) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+g.date));
+      meta.appendChild(el('div',{className:'venue-t'},el('span',{},'🇦🇺'),el('span',{},g.venue+' · '+g.city)));
+      meta.appendChild(el('div',{style:{flex:'1'}}));
+      meta.appendChild(tzRow(g.utc));
+      row.appendChild(meta);
+      c.appendChild(row);
+    });
+  });
+
+  // Knockout stage
+  let lastComp='';
+  RWC_2027_KNOCKOUTS.forEach(g=>{
+    if(g.comp!==lastComp){
+      const koAccent=g.comp==='Final'?'#FFD700':g.comp==='Semi-Final'?'#e879f9':g.comp==='Quarter-Final'?'#ff6b35':g.comp==='Bronze Final'?'#cd7f32':'#00c9ff';
+      c.appendChild(el('div',{style:{fontSize:'12px',fontWeight:800,color:koAccent,letterSpacing:'1.5px',textTransform:'uppercase',padding:'14px 0 4px',borderBottom:'1px solid '+koAccent+'33',marginBottom:'8px'}},g.comp));
+      lastComp=g.comp;
+    }
+    const done=g.hs!=null;
+    const koAccent=g.comp==='Final'?'#FFD700':g.comp==='Semi-Final'?'#e879f9':g.comp==='Quarter-Final'?'#ff6b35':g.comp==='Bronze Final'?'#cd7f32':'#00c9ff';
+    const row=el('div',{className:'intl-gr',style:{borderLeftColor:koAccent+'55',background:done?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.02)'}});
+    const top=el('div',{className:'gr-top'});
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.home));
+    const score=done?`${g.hs}–${g.as}`:g.date;
+    top.appendChild(el('div',{className:'sb',style:{color:done?'#fff':'#444',fontSize:'17px'}},score));
+    top.appendChild(el('span',{className:`tn${done?' a':''}`},g.away));
+    if(done)top.appendChild(pill('FT','#555'));
+    row.appendChild(top);
+    const meta=el('div',{className:'gr-meta'});
+    if(g.date) meta.appendChild(el('span',{style:{fontSize:'11px',fontWeight:700,color:'#6a7a8a',marginRight:'4px'}},'📅 '+g.date));
+    meta.appendChild(el('div',{className:'venue-t'},el('span',{},'🇦🇺'),el('span',{},g.venue+' · '+g.city)));
+    meta.appendChild(el('div',{style:{flex:'1'}}));
+    meta.appendChild(tzRow(g.utc));
+    row.appendChild(meta);
+    c.appendChild(row);
+  });
+
+  return c;
+}
+
+// ─── BUTTON HELPERS ────────────────────────────────────────────────────────
+function toggleBtn(label,isOn,color,onClick){
+  const b=el('button',{className:`tbtn ${isOn?'':'off'}`,
+    style:isOn?{borderColor:color,background:color+'18',color:color}:{},
+    onClick});
+  b.appendChild(document.createTextNode(isOn?'✓ ':''));
+  b.appendChild(document.createTextNode(label));
+  return b;
+}
+function subFilterBtn(label,isOn,color,onClick){
+  const b=el('button',{className:`sfbtn${isOn?' on':''}`,
+    style:isOn?{borderColor:color,background:color+'18',color:color}:{},
+    onClick});
+  b.appendChild(document.createTextNode(label));
+  return b;
+}
+
+// ─── TIMELINE ──────────────────────────────────────────────────────────────
+function buildTimeline(){
+  const w=WEEKENDS[wk];
+  const con=el('div',{className:'tl-wrap'});
+  const nav=el('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'12px',flexWrap:'wrap'}});
+  const pb=el('button',{className:'nav-btn',onClick:()=>{if(wk>0){wk--;render();}}},'‹');
+  const nb=el('button',{className:'nav-btn',onClick:()=>{if(wk<WEEKENDS.length-1){wk++;render();}}},'›');
+  if(wk===0)pb.disabled=true; if(wk===WEEKENDS.length-1)nb.disabled=true;
+  const wi=el('div');
+  wi.appendChild(el('div',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'16px',color:'#fff'}},w.wkLabel));
+  wi.appendChild(el('div',{style:{fontSize:'10px',color:'#666'}},w.label));
+  nav.appendChild(pb); nav.appendChild(wi); nav.appendChild(nb);
+  nav.appendChild(pill(TL[w.tag],TC[w.tag],w.tag==='current'));
+  con.appendChild(nav);
+  const wr=el('div',{style:{display:'flex',gap:'4px',alignItems:'stretch',overflowX:'auto',paddingBottom:'6px',scrollBehavior:'smooth'}});
+  wr.id='tl-scroll';
+  WEEKENDS.forEach((wkx,i)=>{
+    const act=i===wk;
+    const b=el('button',{className:'wk-btn',style:{borderColor:act?TC[wkx.tag]:'rgba(255,255,255,0.07)',background:act?TC[wkx.tag]+'18':'rgba(255,255,255,0.03)',minWidth:'70px',flexShrink:'0'},onClick:()=>{wk=i;render();}});
+    b.appendChild(el('div',{className:'wk-lbl',style:{color:act?TC[wkx.tag]:'#555'}},wkx.wkLabel));
+    b.appendChild(el('div',{className:'wk-dt',style:{color:act?TC[wkx.tag]+'cc':'#444'}},wkx.label));
+    if(wkx.tag==='current')b.appendChild(el('div',{className:'dot'}));
+    if(act) b.id='tl-active';
+    wr.appendChild(b);
+  });
+  con.appendChild(wr);
+  // Auto-scroll to active week after render
+  setTimeout(()=>{
+    const activeBtn=document.getElementById('tl-active');
+    if(activeBtn) activeBtn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },50);
+  const trk=el('div',{className:'track-bar'});
+  const pct=(wk/(WEEKENDS.length-1))*100;
+  trk.appendChild(el('div',{className:'track-fill',style:{left:`${pct}%`,width:`${Math.max(2,100/WEEKENDS.length)}%`,background:TC[w.tag]}}));
+  con.appendChild(trk);
+  // Time period toggle
+  const yt=el('div',{className:'year-toggle'});
+  yt.appendChild(el('span',{style:{fontSize:'11px',color:'#666',marginRight:'4px'}},'Time:'));
+  const timeOpts=[
+    ['Weekends','week','#00c9ff'],
+    ['2026','2026','#b0ff4e'],
+    ['2027','2027','#ffa040'],
+  ];
+  timeOpts.forEach(([lbl,val,col])=>{
+    const active=timeView===val;
+    const b=el('button',{className:`sfbtn${active?' on':''}`,
+      style:active?{borderColor:col,background:col+'18',color:col}:{},
+      onClick:()=>{timeView=val;render();}});
+    b.textContent=lbl;
+    yt.appendChild(b);
+  });
+  // History toggle (only relevant in Weekends view)
+  if(timeView==='week'){
+    yt.appendChild(el('span',{style:{fontSize:'11px',color:'#666',marginLeft:'10px',marginRight:'4px'}},'|'));
+    const hBtn=el('button',{className:`sfbtn${showHistory?' on':''}`,
+      style:showHistory?{borderColor:'#e879f9',background:'#e879f920',color:'#e879f9'}:{},
+      onClick:()=>{showHistory=!showHistory;render();}});
+    hBtn.textContent='History';
+    yt.appendChild(hBtn);
+  }
+  con.appendChild(yt);
+  return con;
+}
+
+// ─── MAIN RENDER ───────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const w=WEEKENDS[wk];
+  const isPast=w.tag==='past'||w.tag==='current';
+
+  const showSRSection=showRugby&&(rugbyAll||rugbySR);
+  const showABSection=showRugby&&(rugbyAll||rugbyAB);
+  const showWALSection=showRugby&&(rugbyAll||rugbyWAL);
+  const showSBSection=showRugby&&(rugbyAll||rugbySB);
+  const show6NSection=showRugby&&(rugbyAll||rugby6N);
+  const showRWCSection=showRugby&&(rugbyAll||rugbyRWC);
+  const showAL=showFootball&&(footAll||footAL);
+  const showAWSection=showFootball&&(footAll||footAW);
+  const showSOCSection=showFootball&&(footAll||footSOC);
+
+  // HEADER
+  const hdr=el('div',{style:{background:'rgba(0,0,0,0.7)',borderBottom:'1px solid rgba(255,255,255,0.07)',padding:'16px 22px 14px',backdropFilter:'blur(16px)',position:'sticky',top:'0',zIndex:'100',animation:'fadeIn 0.3s ease'}});
+  const hIn=el('div',{style:{maxWidth:'960px',margin:'0 auto'}});
+
+  const trow=el('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'14px',flexWrap:'wrap',gap:'10px'}});
+  const tblk=el('div');
+  tblk.appendChild(el('div',{html:'Sports <span style="color:#00c9ff">Hub</span>',style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:'25px',letterSpacing:'2px',color:'#fff',textTransform:'uppercase'}}));
+  tblk.appendChild(el('div',{style:{fontSize:'10px',color:'#555',letterSpacing:'1px'}},'NZ · Melbourne · Perth Times'));
+  trow.appendChild(tblk);
+
+  const fcol=el('div',{style:{display:'flex',flexDirection:'column',gap:'8px',alignItems:'flex-end'}});
+
+  // Row 1: Top-level sport filters
+  const fr1=el('div',{className:'frow',style:{justifyContent:'flex-end'}});
+  [['⚔️ NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e'],
+   ['🏎️ F1','f1',showF1,()=>{showF1=!showF1;render();},'#ff1801'],
+   ['🏉 Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227'],
+   ['⚽ Football','football',showFootball,()=>{showFootball=!showFootball;render();},'#5b21b6'],
+  ].forEach(([lbl,,isOn,fn,col])=>{
+    const b=el('button',{className:`fbtn${isOn?' on':''}`,onClick:fn},lbl);
+    if(isOn){b.style.borderColor=col;b.style.background=col+'18';b.style.color=col;}
+    fr1.appendChild(b);
+  });
+  fcol.appendChild(fr1);
+
+  // Row 2: Rugby sub-filters (only when Rugby is on)
+  if(showRugby){
+    const fr2=el('div',{className:'frow',style:{justifyContent:'flex-end',alignItems:'center',gap:'5px'}});
+    fr2.appendChild(el('span',{style:{fontSize:'10px',color:'#555',marginRight:'2px'}},'Filter:'));
+    const filters=[
+      ['🌐 ALL','ALL','#c9a227'],
+      ['🌀 Super Rugby','SR','#00c9ff'],
+      ['🖤 All Blacks','AB','#cccccc'],
+      ['💛 Wallabies','WAL','#FFD700'],
+      ['💚 Springboks','SB','#00703c'],
+      ['🏆 6 Nations','6N','#e8c53a'],
+      ['🏆 RWC 2027','RWC','#ffa040'],
+    ];
+    filters.forEach(([lbl,key,col])=>{
+      const active=key==='ALL'?rugbyAll:(key==='SR'?rugbySR:key==='AB'?rugbyAB:key==='WAL'?rugbyWAL:key==='SB'?rugbySB:key==='6N'?rugby6N:rugbyRWC);
+      const btn=subFilterBtn(lbl,active,col,()=>toggleRugbyFilter(key));
+      if(rugbyAll&&key!=='ALL'){
+        btn.style.opacity='0.5';
+        btn.style.borderColor=col+'44';
+        btn.style.color=col+'88';
+        btn.style.background='transparent';
+      }
+      fr2.appendChild(btn);
+    });
+    fcol.appendChild(fr2);
+  }
+
+  // Row 3: Football sub-filters (only when Football is on)
+  if(showFootball){
+    const fr3=el('div',{className:'frow',style:{justifyContent:'flex-end',alignItems:'center',gap:'5px'}});
+    fr3.appendChild(el('span',{style:{fontSize:'10px',color:'#555',marginRight:'2px'}},'Filter:'));
+    const fFilters=[
+      ['🌐 ALL','ALL','#5b21b6'],
+      ['⚽ A-League','AL','#ff6b35'],
+      ['🇳🇿 All Whites WC26','AW','#fff'],
+      ['🇦🇺 Socceroos WC26','SOC','#FFD700'],
+    ];
+    fFilters.forEach(([lbl,key,col])=>{
+      const active=key==='ALL'?footAll:(key==='AL'?footAL:key==='AW'?footAW:footSOC);
+      const btn=subFilterBtn(lbl,active,col,()=>toggleFootballFilter(key));
+      if(footAll&&key!=='ALL'){
+        btn.style.opacity='0.5';
+        btn.style.borderColor=col+'44';
+        btn.style.color=col+'88';
+        btn.style.background='transparent';
+      }
+      fr3.appendChild(btn);
+    });
+    fcol.appendChild(fr3);
+  }
+
+  trow.appendChild(fcol);
+  hIn.appendChild(trow);
+  hIn.appendChild(buildTimeline());
+  hdr.appendChild(hIn);
+  app.appendChild(hdr);
+
+  // CONTENT
+  const con=el('div',{style:{maxWidth:'960px',margin:'24px auto 0',padding:'0 18px'}});
+
+  const leg=el('div',{className:'legend'});
+  leg.appendChild(el('span',{style:{fontSize:'11px',color:'#666'}},'Times:'));
+  [['NZ = NZDT +13 / NZST +12','#00c9ff'],['MEL = AEDT +11 / AEST +10','#e879f9'],['PERTH = AWST +8','#ffa040']].forEach(([t,c])=>{
+    leg.appendChild(el('span',{className:'tzb',style:{background:c+'22',color:c,border:`1px solid ${c}44`}},t));
+  });
+  leg.appendChild(el('span',{style:{fontSize:'10px',color:'#555'}},'DST auto-adjusts'));
+  con.appendChild(leg);
+
+  // ─── 2027 VIEW ───
+  if(timeView==='2027'){
+    if(showRWCSection) { const rwcNode=rwc2027Section(); if(rwcNode) con.appendChild(rwcNode); }
+    // Placeholder for other 2027 schedules
+    const ph=card('#555',30);
+    ph.appendChild(secHead('📅','Other 2027 Schedules','#555','Coming Soon'));
+    ph.appendChild(el('div',{style:{padding:'14px',textAlign:'center',color:'#555',fontSize:'13px',fontStyle:'italic',lineHeight:'1.6'}},
+      'Super Rugby Pacific, NRL, Nations Championship, A-League & F1 schedules will be added as confirmed.'));
+    con.appendChild(ph);
+    app.appendChild(con);
+    return;
+  }
+
+  // Helper: only appendChild if node is not null
+  const add=(node)=>{if(node)con.appendChild(node);};
+
+  // ─── GLOBAL SECTIONS (tournaments / internationals) ───
+  // Only show when History is ON or in year views — not in single-weekend mode
+  const showGlobal=showHistory||timeView!=='week';
+  if(showGlobal){
+    if(show6NSection) add(sixNationsSection());
+    if(showABSection) add(intlSection(ALL_BLACKS,'All Blacks','#cccccc','🖤'));
+    if(showWALSection) add(intlSection(WALLABIES,'Wallabies','#FFD700','💛'));
+    if(showSBSection) add(intlSection(SPRINGBOKS,'Springboks','#00703c','💚'));
+    if(showAWSection) add(wcSection(ALL_WHITES_WC,'All Whites','#fff','🇳🇿','Group G · Belgium, Egypt, Iran'));
+    if(showSOCSection) add(wcSection(SOCCEROOS_WC,'Socceroos','#FFD700','🇦🇺','Group D · USA, Paraguay, UEFA PO-C'));
+    if(showRWCSection) add(rwc2027Section());
+  }
+
+  // ─── WEEKEND SECTIONS ───
+  if(timeView==='week'&&showHistory){
+    // HISTORY ON: show all weekends from selected down to first
+    for(let i=wk;i>=0;i--){
+      const wi=WEEKENDS[i];
+      const wiPast=wi.tag==='past'||wi.tag==='current';
+      const hasContent=(showSRSection&&wi.superRugby)||(showNRL&&wi.nrl)||(showAL&&wi.aLeague)||(showF1&&wi.f1);
+      if(!hasContent) continue;
+      // Weekend divider header
+      const wkHdr=el('div',{style:{display:'flex',alignItems:'center',gap:'10px',margin:(i===wk?'4px 0 10px':'28px 0 10px'),padding:'0 4px'}});
+      wkHdr.appendChild(el('div',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'14px',letterSpacing:'1px',color:TC[wi.tag],textTransform:'uppercase',whiteSpace:'nowrap'}},wi.wkLabel+' · '+wi.label));
+      wkHdr.appendChild(el('div',{style:{flex:'1',height:'1px',background:TC[wi.tag]+'33'}}));
+      if(i===wk) wkHdr.appendChild(pill(TL[wi.tag],TC[wi.tag],wi.tag==='current'));
+      con.appendChild(wkHdr);
+      if(showSRSection) add(superRugbySection(wi.superRugby,wiPast));
+      if(showNRL) add(nrlSection(wi.nrl));
+      if(showAL) add(aLeagueSection(wi.aLeague));
+      if(showF1) add(f1Section(wi.f1));
+      if(wi.tag==='future') con.appendChild(el('div',{className:'future-note'},'🔮 Upcoming — fixtures & times shown, results to come'));
+    }
+  } else if(timeView==='week'){
+    // HISTORY OFF: show selected weekend + all future weekends (no past results)
+    for(let i=wk;i<WEEKENDS.length;i++){
+      const wi=WEEKENDS[i];
+      // Skip past weekends that aren't the selected one
+      if(i!==wk&&wi.tag==='past') continue;
+      const wiPast=wi.tag==='past'||wi.tag==='current';
+      const hasContent=(showSRSection&&wi.superRugby)||(showNRL&&wi.nrl)||(showAL&&wi.aLeague)||(showF1&&wi.f1);
+      if(!hasContent) continue;
+      // Weekend divider header
+      const wkHdr=el('div',{style:{display:'flex',alignItems:'center',gap:'10px',margin:(i===wk?'4px 0 10px':'28px 0 10px'),padding:'0 4px'}});
+      wkHdr.appendChild(el('div',{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:'14px',letterSpacing:'1px',color:TC[wi.tag],textTransform:'uppercase',whiteSpace:'nowrap'}},wi.wkLabel+' · '+wi.label));
+      wkHdr.appendChild(el('div',{style:{flex:'1',height:'1px',background:TC[wi.tag]+'33'}}));
+      if(i===wk) wkHdr.appendChild(pill(TL[wi.tag],TC[wi.tag],wi.tag==='current'));
+      con.appendChild(wkHdr);
+      if(showSRSection) add(superRugbySection(wi.superRugby,wiPast));
+      if(showNRL) add(nrlSection(wi.nrl));
+      if(showAL) add(aLeagueSection(wi.aLeague));
+      if(showF1) add(f1Section(wi.f1));
+      if(wi.tag==='future') con.appendChild(el('div',{className:'future-note'},'🔮 Upcoming — fixtures & times shown, results to come'));
+    }
+  } else {
+    // Year views (2026/2027)
+    if(showSRSection) add(superRugbySection(w.superRugby,isPast));
+    if(showNRL) add(nrlYearSection());
+    if(showAL) add(aLeagueSection(w.aLeague));
+    if(showF1) add(f1Section(w.f1));
+  }
+
+  app.appendChild(con);
+}
+
+render();
+</script>
+</body>
+</html>
