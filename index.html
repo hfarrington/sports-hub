@@ -491,19 +491,20 @@ const F1_CALENDAR = {
 })();
 
 
-// ── TEAM LOGOS (favicons from official sites) ────────────────────────────────
+// ── TEAM LOGOS (favicons from official sites — 128px for crisp rendering) ─────
 const TEAM_LOGOS = {
-  'All Blacks':'https://www.google.com/s2/favicons?domain=allblacks.com&sz=32',
-  'Wallabies':'https://www.google.com/s2/favicons?domain=wallabies.rugby&sz=32',
-  'Springboks':'https://www.google.com/s2/favicons?domain=springboks.rugby&sz=32',
-  'Six Nations':'https://www.google.com/s2/favicons?domain=sixnationsrugby.com&sz=32',
-  'Super Rugby':'https://www.google.com/s2/favicons?domain=superrugby.co.nz&sz=32',
-  'RWC 2027':'https://www.google.com/s2/favicons?domain=rugbyworldcup.com&sz=32',
-  'NRL':'https://www.google.com/s2/favicons?domain=nrl.com&sz=32',
-  'A-League':'https://www.google.com/s2/favicons?domain=aleagues.com.au&sz=32',
-  'F1':'https://www.google.com/s2/favicons?domain=formula1.com&sz=32',
-  'All Whites':'https://www.google.com/s2/favicons?domain=nzfootball.co.nz&sz=32',
-  'Socceroos':'https://www.google.com/s2/favicons?domain=socceroos.com.au&sz=32',
+  'All Blacks':'https://www.google.com/s2/favicons?domain=allblacks.com&sz=128',
+  'Wallabies':'https://www.google.com/s2/favicons?domain=wallabies.rugby&sz=128',
+  'Springboks':'https://www.google.com/s2/favicons?domain=springboks.rugby&sz=128',
+  'Six Nations':'https://www.google.com/s2/favicons?domain=sixnationsrugby.com&sz=128',
+  'Super Rugby':'https://www.google.com/s2/favicons?domain=superrugby.co.nz&sz=128',
+  'RWC 2027':'https://www.google.com/s2/favicons?domain=rugbyworldcup.com&sz=128',
+  'NRL':'https://www.google.com/s2/favicons?domain=nrl.com&sz=128',
+  'Warriors':'https://www.google.com/s2/favicons?domain=warriors.kiwi&sz=128',
+  'A-League':'https://www.google.com/s2/favicons?domain=aleagues.com.au&sz=128',
+  'F1':'https://www.google.com/s2/favicons?domain=formula1.com&sz=128',
+  'All Whites':'https://www.google.com/s2/favicons?domain=nzfootball.co.nz&sz=128',
+  'Socceroos':'https://www.google.com/s2/favicons?domain=socceroos.com.au&sz=128',
 };
 
 // ── 2027 RUGBY WORLD CUP — AUSTRALIA ────────────────────────────────────────
@@ -1022,11 +1023,12 @@ function toggleBtn(label,isOn,color,onClick,logoKey){
   b.appendChild(document.createTextNode(label));
   return b;
 }
-function subFilterBtn(label,isOn,color,onClick,logoKey){
+function subFilterBtn(label,isOn,color,onClick,logoKey,emoji){
   const b=el('button',{className:`sfbtn${isOn?' on':''}`,
     style:isOn?{borderColor:color,background:color+'18',color:color}:{},
     onClick});
   if(logoKey&&TEAM_LOGOS[logoKey]){b.appendChild(logoImg(TEAM_LOGOS[logoKey],14));b.appendChild(document.createTextNode(' '));}
+  else if(emoji){b.appendChild(document.createTextNode(emoji+' '));}
   b.appendChild(document.createTextNode(label));
   return b;
 }
@@ -1126,9 +1128,9 @@ function render(){
 
   // Row 1: Top-level sport filters
   const fr1=el('div',{className:'frow',style:{justifyContent:'flex-end'}});
-  [['NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','NRL'],
+  [['NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','Warriors'],
    ['F1','f1',showF1,()=>{showF1=!showF1;render();},'#ff1801','F1'],
-   ['Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227','Super Rugby'],
+   ['Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227','All Blacks'],
    ['Football','football',showFootball,()=>{showFootball=!showFootball;render();},'#5b21b6','A-League'],
   ].forEach(([lbl,,isOn,fn,col,logoKey])=>{
     const b=el('button',{className:`fbtn${isOn?' on':''}`,onClick:fn});
@@ -1144,7 +1146,7 @@ function render(){
     const fr2=el('div',{className:'frow',style:{justifyContent:'flex-end',alignItems:'center',gap:'5px'}});
     fr2.appendChild(el('span',{style:{fontSize:'10px',color:'#555',marginRight:'2px'}},'Filter:'));
     const filters=[
-      ['ALL','ALL','#c9a227',null],
+      ['ALL','ALL','#c9a227',null,'🏉'],
       ['Super Rugby','SR','#00c9ff','Super Rugby'],
       ['All Blacks','AB','#cccccc','All Blacks'],
       ['Wallabies','WAL','#FFD700','Wallabies'],
@@ -1152,9 +1154,9 @@ function render(){
       ['6 Nations','6N','#e8c53a','Six Nations'],
       ['RWC 2027','RWC','#ffa040','RWC 2027'],
     ];
-    filters.forEach(([lbl,key,col,logoKey])=>{
+    filters.forEach(([lbl,key,col,logoKey,emoji])=>{
       const active=key==='ALL'?rugbyAll:(key==='SR'?rugbySR:key==='AB'?rugbyAB:key==='WAL'?rugbyWAL:key==='SB'?rugbySB:key==='6N'?rugby6N:rugbyRWC);
-      const btn=subFilterBtn(lbl,active,col,()=>toggleRugbyFilter(key),logoKey);
+      const btn=subFilterBtn(lbl,active,col,()=>toggleRugbyFilter(key),logoKey,emoji);
       if(rugbyAll&&key!=='ALL'){
         btn.style.opacity='0.5';
         btn.style.borderColor=col+'44';
@@ -1171,14 +1173,14 @@ function render(){
     const fr3=el('div',{className:'frow',style:{justifyContent:'flex-end',alignItems:'center',gap:'5px'}});
     fr3.appendChild(el('span',{style:{fontSize:'10px',color:'#555',marginRight:'2px'}},'Filter:'));
     const fFilters=[
-      ['ALL','ALL','#5b21b6',null],
+      ['ALL','ALL','#5b21b6',null,'⚽'],
       ['A-League','AL','#ff6b35','A-League'],
       ['All Whites WC26','AW','#fff','All Whites'],
       ['Socceroos WC26','SOC','#FFD700','Socceroos'],
     ];
-    fFilters.forEach(([lbl,key,col,logoKey])=>{
+    fFilters.forEach(([lbl,key,col,logoKey,emoji])=>{
       const active=key==='ALL'?footAll:(key==='AL'?footAL:key==='AW'?footAW:footSOC);
-      const btn=subFilterBtn(lbl,active,col,()=>toggleFootballFilter(key),logoKey);
+      const btn=subFilterBtn(lbl,active,col,()=>toggleFootballFilter(key),logoKey,emoji);
       if(footAll&&key!=='ALL'){
         btn.style.opacity='0.5';
         btn.style.borderColor=col+'44';
