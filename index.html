@@ -1129,9 +1129,9 @@ function render(){
 
   // Row 1: Top-level sport filters
   const fr1=el('div',{className:'frow',style:{justifyContent:'flex-end'}});
-  [['NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','Warriors'],
+  [['Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227','All Blacks'],
+   ['NRL / Warriors','nrl',showNRL,()=>{showNRL=!showNRL;render();},'#b0ff4e','Warriors'],
    ['F1','f1',showF1,()=>{showF1=!showF1;render();},'#ff1801','F1'],
-   ['Rugby','rugby',showRugby,()=>{showRugby=!showRugby;render();},'#c9a227','All Blacks'],
    ['Football','football',showFootball,()=>{showFootball=!showFootball;render();},'#5b21b6','A-League'],
   ].forEach(([lbl,,isOn,fn,col,logoKey])=>{
     const b=el('button',{className:`fbtn${isOn?' on':''}`,onClick:fn});
