@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { usePreferences } from '@/providers/PreferencesProvider';
+import CountryPicker from '@/components/onboarding/CountryPicker';
 import SportPicker from '@/components/onboarding/SportPicker';
 import TimezonePicker from '@/components/onboarding/TimezonePicker';
 
@@ -38,6 +39,11 @@ export default function SettingsPage() {
       </header>
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-8">
+        <CountryPicker
+          value={preferences.homeCountry}
+          onChange={(id) => updatePreferences({ homeCountry: id })}
+        />
+
         <SportPicker
           selected={preferences.selectedSports}
           onToggle={toggleSport}

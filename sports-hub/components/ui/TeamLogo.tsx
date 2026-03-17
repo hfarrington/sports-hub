@@ -13,7 +13,7 @@ interface TeamLogoProps {
 export default function TeamLogo({ src, name, shortName, accent = '#888', size = 24 }: TeamLogoProps) {
   const [error, setError] = useState(false);
 
-  if (error || src.startsWith('/icons/')) {
+  if (error || !src || src.startsWith('/icons/')) {
     // Fallback: styled initials
     return (
       <div

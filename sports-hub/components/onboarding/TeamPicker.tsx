@@ -147,13 +147,13 @@ function TeamButton({
       }}
     >
       <div className="w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center overflow-hidden flex-shrink-0">
-        {team.icon.startsWith('/') ? (
+        {team.icon && !team.icon.startsWith('/') ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={team.icon} alt={team.name} className="w-5 h-5 object-contain" />
+        ) : (
           <span className="text-[10px] font-bold" style={{ color: team.accent || accent }}>
             {team.shortName}
           </span>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={team.icon} alt={team.name} className="w-5 h-5 object-contain" />
         )}
       </div>
       <span

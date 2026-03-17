@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePreferences } from '@/providers/PreferencesProvider';
+import CountryPicker from '@/components/onboarding/CountryPicker';
 import SportPicker from '@/components/onboarding/SportPicker';
 import TeamPicker from '@/components/onboarding/TeamPicker';
 import TimezonePicker from '@/components/onboarding/TimezonePicker';
@@ -11,9 +12,10 @@ import { SPORTS } from '@/lib/constants';
 export default function OnboardingPage() {
   const router = useRouter();
   const { updatePreferences } = usePreferences();
-  const [step, setStep] = useState(0); // 0 = sports, 1..N = team pickers, N+1 = timezone
+  const [step, setStep] = useState(0); // 0 = country, 1 = sports, 2..N+1 = team pickers, N+2 = timezone
 
   // Local state for building preferences
+  const [homeCountry, setHomeCountry] = useState('nz');
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [selectedCompetitions, setSelectedCompetitions] = useState<Record<string, string[]>>({});
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string[]>>({});
@@ -21,9 +23,11 @@ export default function OnboardingPage() {
   const [timezone1, setTimezone1] = useState('auckland');
   const [timezone2, setTimezone2] = useState('melbourne');
 
-  const totalSteps = selectedSports.length + 2; // sports + N team pickers + timezone
-  const isTimezoneStep = step === selectedSports.length + 1;
-  const currentSportIndex = step - 1; // which sport we're picking teams for
+  const totalSteps = selectedSports.length + 3; // country + sports + N team pickers + timezone
+  const isCountryStep = step === 0;
+  const isSportsStep = step === 1;
+  const isTimezoneStep = step === selectedSports.length + 2;
+  const currentSportIndex = step - 2; // which sport we're picking teams for
 
   function toggleSport(id: string) {
     setSelectedSports(prev =>
@@ -62,6 +66,7 @@ export default function OnboardingPage() {
       // Save and go to dashboard
       updatePreferences({
         onboarded: true,
+        homeCountry,
         selectedSports,
         selectedCompetitions,
         selectedTeams,
@@ -77,11 +82,13 @@ export default function OnboardingPage() {
     if (step > 0) setStep(step - 1);
   }
 
-  const canProceed = step === 0
-    ? selectedSports.length > 0
-    : isTimezoneStep
-      ? !!timezone1 && !!timezone2
-      : true; // team selection is optional
+  const canProceed = isCountryStep
+    ? !!homeCountry
+    : isSportsStep
+      ? selectedSports.length > 0
+      : isTimezoneStep
+        ? !!timezone1 && !!timezone2
+        : true; // team selection is optional
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -93,7 +100,7 @@ export default function OnboardingPage() {
               Step {step + 1} of {totalSteps}
             </span>
             <span className="text-xs text-text-muted">
-              {step === 0 ? 'Sports' : isTimezoneStep ? 'Timezones' : selectedSports[currentSportIndex]}
+              {isCountryStep ? 'Country' : isSportsStep ? 'Sports' : isTimezoneStep ? 'Timezones' : selectedSports[currentSportIndex]}
             </span>
           </div>
           <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
@@ -109,11 +116,15 @@ export default function OnboardingPage() {
 
         {/* Step content */}
         <div className="animate-fade-in">
-          {step === 0 && (
+          {isCountryStep && (
+            <CountryPicker value={homeCountry} onChange={setHomeCountry} />
+          )}
+
+          {isSportsStep && (
             <SportPicker selected={selectedSports} onToggle={toggleSport} />
           )}
 
-          {step > 0 && !isTimezoneStep && selectedSports[currentSportIndex] && (
+          {step > 1 && !isTimezoneStep && selectedSports[currentSportIndex] && (
             <TeamPicker
               sportId={selectedSports[currentSportIndex]}
               selectedCompetitions={selectedCompetitions[selectedSports[currentSportIndex]] || []}
@@ -156,12 +167,12 @@ export default function OnboardingPage() {
               color: canProceed ? '#000' : '#666',
             }}
           >
-            {isTimezoneStep ? "Let's Go!" : step === 0 ? 'Next — Pick Teams' : 'Next'}
+            {isTimezoneStep ? "Let's Go!" : isCountryStep ? 'Next — Pick Sports' : isSportsStep ? 'Next — Pick Teams' : 'Next'}
           </button>
         </div>
 
         {/* Skip team selection hint */}
-        {step > 0 && !isTimezoneStep && (
+        {step > 1 && !isTimezoneStep && (
           <p className="text-center text-xs text-text-muted mt-3">
             You can skip — this just filters what you see on the dashboard
           </p>

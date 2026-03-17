@@ -26,12 +26,21 @@ export default function Header({ searchQuery, onSearchChange }: HeaderProps) {
               Sports Hub
             </span>
           </Link>
-          <Link
-            href="/settings"
-            className="w-8 h-8 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
-          >
-            ⚙
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/watch"
+              className="h-8 px-3 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-xs font-bold uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              📺 Watch
+            </Link>
+            <Link
+              href="/settings"
+              className="w-8 h-8 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+            >
+              ⚙
+            </Link>
+          </div>
         </div>
 
         {/* Search */}

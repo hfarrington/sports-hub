@@ -39,6 +39,7 @@ export interface Game {
   awayScore?: number;
   round?: string;
   comment?: string;
+  broadcast?: Record<string, string>; // countryId → channel/service name
 }
 
 export interface TeamRef {
@@ -83,6 +84,7 @@ export interface TimezoneResult {
 
 export interface UserPreferences {
   onboarded: boolean;
+  homeCountry: string; // country ID
   selectedSports: string[]; // sport IDs
   selectedCompetitions: Record<string, string[]>; // sportId → competitionIds
   selectedTeams: Record<string, string[]>; // sportId → teamIds
@@ -96,6 +98,7 @@ export interface UserPreferences {
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   onboarded: false,
+  homeCountry: 'nz',
   selectedSports: [],
   selectedCompetitions: {},
   selectedTeams: {},
