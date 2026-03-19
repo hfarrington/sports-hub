@@ -20,18 +20,33 @@ async function fetchRugbyGames(): Promise<Game[]> {
   if (cached) return cached;
 
   try {
-    // Fetch a wide window: 8 weeks back + 26 weeks forward (~6 months)
+    // Fetch past and future separately to avoid 100-result cap
     const now = new Date();
-    const start = new Date(now);
-    start.setDate(start.getDate() - 56);
-    const end = new Date(now);
-    end.setDate(end.getDate() + 182);
+    const pastStart = new Date(now);
+    pastStart.setDate(pastStart.getDate() - 42); // 6 weeks back
+    const futureEnd = new Date(now);
+    futureEnd.setDate(futureEnd.getDate() + 182); // 6 months forward
 
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0];
+    const pastStartStr = pastStart.toISOString().split('T')[0];
+    const futureEndStr = futureEnd.toISOString().split('T')[0];
 
-    const matches = await fetchWorldRugbyMatches(startStr, endStr);
-    const games = mapWorldRugbyMatches(matches);
+    // Fetch past + future in parallel
+    const [pastMatches, futureMatches] = await Promise.all([
+      fetchWorldRugbyMatches(pastStartStr, todayStr),
+      fetchWorldRugbyMatches(todayStr, futureEndStr),
+    ]);
+
+    const allMatches = [...pastMatches, ...futureMatches];
+    // Deduplicate by matchId
+    const seen = new Set<string>();
+    const unique = allMatches.filter(m => {
+      if (seen.has(m.matchId)) return false;
+      seen.add(m.matchId);
+      return true;
+    });
+
+    const games = mapWorldRugbyMatches(unique);
 
     cacheSet(cacheKey, games, CACHE_TTL);
     return games;
