@@ -12,7 +12,7 @@ const SPORT_EMOJIS: Record<string, string> = {
   rugby: '🏉', nrl: '⚔️', f1: '🏎️', football: '⚽',
 };
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface MonthlyViewProps {
@@ -35,13 +35,9 @@ export default function MonthlyView({ games, searchQuery }: MonthlyViewProps) {
     end.setDate(end.getDate() + 42); // 6 weeks
 
     const pad = (n: number) => String(n).padStart(2, '0');
-    const lbl = `${pad(start.getDate())} ${MONTHS[start.getMonth()]} – ${pad(end.getDate())} ${MONTHS[end.getMonth()]}`;
+    const lbl = `${pad(start.getDate())} ${MONTHS[start.getMonth()]} ${start.getFullYear()} – ${pad(end.getDate())} ${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
 
-    return {
-      startDate: start,
-      endDate: end,
-      label: lbl,
-    };
+    return { startDate: start, endDate: end, label: lbl };
   }, [offsetWeeks]);
 
   // Filter games to this window + user preferences
@@ -83,45 +79,48 @@ export default function MonthlyView({ games, searchQuery }: MonthlyViewProps) {
       if (!groups[date]) groups[date] = [];
       groups[date].push(game);
     }
-    // Sort each day's games by time
     for (const date of Object.keys(groups)) {
       groups[date].sort((a, b) => new Date(a.utc).getTime() - new Date(b.utc).getTime());
     }
     return groups;
   }, [filteredGames]);
 
-  const sortedDates = useMemo(() =>
-    Object.keys(gamesByDate).sort(),
-    [gamesByDate]
-  );
+  const sortedDates = useMemo(() => Object.keys(gamesByDate).sort(), [gamesByDate]);
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Count by sport for summary
+  const sportCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const game of filteredGames) {
+      counts[game.sportId] = (counts[game.sportId] || 0) + 1;
+    }
+    return counts;
+  }, [filteredGames]);
+
   return (
     <div className="space-y-3">
-      {/* Navigation */}
-      <div className="rounded-xl p-3.5 border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.04)' }}>
-        <div className="flex items-center justify-between">
+      {/* Navigation header */}
+      <div className="rounded-xl p-4 border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.04)' }}>
+        <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => setOffsetWeeks(w => w - 1)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+            className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+            title="Back 2 weeks"
           >
             ◂
           </button>
 
-          <div className="text-center flex-1 px-2">
-            <p className="font-black text-sm uppercase tracking-wider text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+          <div className="text-center flex-1 px-3">
+            <p className="font-black text-base uppercase tracking-wider text-white" style={{ fontFamily: 'var(--font-heading)' }}>
               {label}
-            </p>
-            <p className="text-[10px] text-text-muted mt-0.5">
-              {filteredGames.length} event{filteredGames.length !== 1 ? 's' : ''} across {sortedDates.length} day{sortedDates.length !== 1 ? 's' : ''}
             </p>
           </div>
 
           {offsetWeeks !== 0 && (
             <button
               onClick={() => setOffsetWeeks(0)}
-              className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/10 transition-all mr-2"
+              className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/10 transition-all mr-2"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
               Today
@@ -130,10 +129,37 @@ export default function MonthlyView({ games, searchQuery }: MonthlyViewProps) {
 
           <button
             onClick={() => setOffsetWeeks(w => w + 1)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+            className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+            title="Forward 2 weeks"
           >
             ▸
           </button>
+        </div>
+
+        {/* Sport summary pills */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-[11px] text-text-muted">
+            {filteredGames.length} event{filteredGames.length !== 1 ? 's' : ''} across {sortedDates.length} day{sortedDates.length !== 1 ? 's' : ''}
+          </span>
+          <div className="flex gap-1.5 ml-auto">
+            {Object.entries(sportCounts).map(([sportId, count]) => {
+              const sport = SPORTS.find(s => s.id === sportId);
+              return (
+                <span
+                  key={sportId}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    background: `${sport?.accent || '#888'}15`,
+                    color: sport?.accent || '#888',
+                    border: `1px solid ${sport?.accent || '#888'}30`,
+                  }}
+                >
+                  {SPORT_EMOJIS[sportId] || ''} {count}
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -145,50 +171,65 @@ export default function MonthlyView({ games, searchQuery }: MonthlyViewProps) {
           <p className="text-text-muted text-xs mt-1">Try navigating forward or adjusting your selections.</p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {sortedDates.map(dateStr => {
             const date = new Date(dateStr + 'T00:00:00');
             const dayName = DAYS[date.getDay()];
             const dayNum = date.getDate();
             const month = MONTHS[date.getMonth()];
             const isToday = dateStr === today;
+            const isPast = dateStr < today;
             const dayGames = gamesByDate[dateStr];
 
             return (
-              <div key={dateStr}>
+              <div
+                key={dateStr}
+                className="rounded-xl overflow-hidden border"
+                style={{
+                  borderColor: isToday ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.06)',
+                  background: isToday ? 'rgba(0,201,255,0.03)' : 'rgba(255,255,255,0.02)',
+                }}
+              >
                 {/* Date header */}
                 <div
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg sticky top-[105px] z-10"
+                  className="flex items-center gap-2 px-4 py-2.5"
                   style={{
                     background: isToday ? 'rgba(0,201,255,0.08)' : 'rgba(255,255,255,0.03)',
-                    borderLeft: isToday ? '3px solid #00c9ff' : '3px solid transparent',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   <span
-                    className="font-black text-xs uppercase tracking-wider"
+                    className="font-black text-sm uppercase tracking-wider"
                     style={{
                       fontFamily: 'var(--font-heading)',
-                      color: isToday ? '#00c9ff' : '#888',
+                      color: isToday ? '#00c9ff' : isPast ? '#555' : '#ccc',
                     }}
                   >
-                    {dayName} {dayNum} {month}
+                    {dayName}
+                  </span>
+                  <span
+                    className="font-black text-sm uppercase tracking-wider"
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      color: isToday ? '#00c9ff' : isPast ? '#666' : '#fff',
+                    }}
+                  >
+                    {dayNum} {month}
                   </span>
                   {isToday && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent-cyan/20 text-accent-cyan">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-cyan/20 text-accent-cyan">
                       Today
                     </span>
                   )}
                   <span className="text-[10px] text-text-muted ml-auto">
-                    {dayGames.length} event{dayGames.length !== 1 ? 's' : ''}
+                    {dayGames.length} game{dayGames.length !== 1 ? 's' : ''}
                   </span>
                 </div>
 
                 {/* Games for this day */}
-                <div className="rounded-b-lg border border-white/[0.06] border-t-0 mb-2" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  {dayGames.map(game => (
-                    <CompactGameRow key={game.id} game={game} />
-                  ))}
-                </div>
+                {dayGames.map(game => (
+                  <CompactGameRow key={game.id} game={game} />
+                ))}
               </div>
             );
           })}
@@ -209,45 +250,52 @@ function CompactGameRow({ game }: { game: Game }) {
 
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.04] last:border-0"
-      style={{
-        borderLeft: `3px solid ${accent}`,
-      }}
+      className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.04] last:border-0"
+      style={{ borderLeft: `3px solid ${accent}` }}
     >
       {/* Sport emoji */}
-      <span className="text-sm flex-shrink-0">{emoji}</span>
+      <span className="text-base flex-shrink-0">{emoji}</span>
 
-      {/* Status */}
+      {/* Status pill */}
       <Pill status={game.status} />
 
-      {/* Teams — compact */}
-      <div className="flex items-center gap-1 min-w-0 flex-1">
+      {/* Teams + score */}
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <span
-          className="font-bold text-xs truncate"
-          style={{ fontFamily: 'var(--font-heading)', color: game.status === 'final' ? '#888' : '#fff' }}
+          className="font-bold text-sm"
+          style={{
+            fontFamily: 'var(--font-heading)',
+            color: game.status === 'final' ? '#777' : '#fff',
+          }}
         >
-          {game.home.shortName}
+          {game.home.name}
         </span>
 
         {game.status === 'final' || game.status === 'live' ? (
-          <span className="font-black text-xs px-1" style={{ fontFamily: 'var(--font-heading)', color: accent }}>
+          <span
+            className="font-black text-sm px-1.5"
+            style={{ fontFamily: 'var(--font-heading)', color: accent }}
+          >
             {game.homeScore}–{game.awayScore}
           </span>
         ) : (
-          <span className="text-[10px] text-text-muted px-0.5">v</span>
+          <span className="text-[11px] text-text-muted px-1">vs</span>
         )}
 
         <span
-          className="font-bold text-xs truncate"
-          style={{ fontFamily: 'var(--font-heading)', color: game.status === 'final' ? '#888' : '#fff' }}
+          className="font-bold text-sm"
+          style={{
+            fontFamily: 'var(--font-heading)',
+            color: game.status === 'final' ? '#777' : '#fff',
+          }}
         >
-          {game.away.shortName}
+          {game.away.name}
         </span>
       </div>
 
       {/* Round */}
       {game.round && (
-        <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider flex-shrink-0">
+        <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider flex-shrink-0 hidden sm:block">
           {game.round}
         </span>
       )}
@@ -257,20 +305,22 @@ function CompactGameRow({ game }: { game: Game }) {
         <TimezoneBadge utc={game.utc} />
       </div>
 
-      {/* Broadcast */}
+      {/* Broadcast link */}
       {broadcast && (
         broadcast.url ? (
           <a
             href={broadcast.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 hover:brightness-125 transition-all"
+            className="text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0 hover:brightness-125 transition-all hidden sm:flex items-center gap-1"
             style={{ background: 'rgba(0,201,255,0.1)', color: '#00c9ff' }}
           >
-            📺
+            📺 {broadcast.name}
           </a>
         ) : (
-          <span className="text-[9px] text-text-muted flex-shrink-0">📺</span>
+          <span className="text-[10px] text-text-muted flex-shrink-0 hidden sm:block">
+            📺 {broadcast.name}
+          </span>
         )
       )}
     </div>

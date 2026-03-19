@@ -33,25 +33,27 @@ export default function Header({ searchQuery, onSearchChange, viewMode = 'weekly
           <div className="flex items-center gap-2">
             {/* View mode toggle */}
             {onViewModeChange && (
-              <div className="flex rounded-lg border border-white/[0.15] overflow-hidden">
+              <div className="flex gap-1.5">
                 <button
                   onClick={() => onViewModeChange('weekly')}
-                  className="h-8 px-2.5 text-xs font-bold uppercase tracking-wider transition-all"
+                  className="h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border"
                   style={{
                     fontFamily: 'var(--font-heading)',
-                    background: viewMode === 'weekly' ? 'rgba(0,201,255,0.15)' : 'transparent',
+                    background: viewMode === 'weekly' ? 'rgba(0,201,255,0.15)' : 'rgba(255,255,255,0.04)',
                     color: viewMode === 'weekly' ? '#00c9ff' : '#666',
+                    borderColor: viewMode === 'weekly' ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.1)',
                   }}
                 >
                   Weekly
                 </button>
                 <button
                   onClick={() => onViewModeChange('monthly')}
-                  className="h-8 px-2.5 text-xs font-bold uppercase tracking-wider transition-all border-l border-white/[0.15]"
+                  className="h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border"
                   style={{
                     fontFamily: 'var(--font-heading)',
-                    background: viewMode === 'monthly' ? 'rgba(0,201,255,0.15)' : 'transparent',
+                    background: viewMode === 'monthly' ? 'rgba(0,201,255,0.15)' : 'rgba(255,255,255,0.04)',
                     color: viewMode === 'monthly' ? '#00c9ff' : '#666',
+                    borderColor: viewMode === 'monthly' ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.1)',
                   }}
                 >
                   Monthly
