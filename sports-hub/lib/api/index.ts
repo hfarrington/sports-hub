@@ -6,6 +6,8 @@ import { fetchWorldRugbyMatches } from './fetchers/world-rugby';
 import { mapWorldRugbyMatches } from './mappers/world-rugby';
 import { fetchF1Schedule, fetchF1Results } from './fetchers/ergast';
 import { mapF1Races } from './mappers/ergast';
+import { fetchFixtureDownload } from './fetchers/fixturedownload';
+import { mapFixtureDownloadMatches } from './mappers/fixturedownload';
 import { SAMPLE_GAMES } from '@/lib/sample-data';
 
 /**
@@ -70,11 +72,33 @@ async function fetchF1Games(): Promise<Game[]> {
 }
 
 /**
- * Get sample data for sports without live APIs yet (NRL, Football, Cricket, NBA, etc.)
+ * Fetch NRL games from FixtureDownload.com — free, no auth.
+ */
+async function fetchNRLGames(): Promise<Game[]> {
+  const cacheKey = 'nrl-games';
+  const cached = cacheGet<Game[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const matches = await fetchFixtureDownload('nrl-2026');
+    const games = mapFixtureDownloadMatches(matches, 'nrl', 'nrl-premiership');
+    cacheSet(cacheKey, games, CACHE_TTL);
+    return games;
+  } catch (error) {
+    console.error('[API] FixtureDownload NRL fetch failed:', error);
+    const stale = cacheGetStale<Game[]>(cacheKey);
+    if (stale) return stale;
+    return SAMPLE_GAMES.filter(g => g.sportId === 'nrl');
+  }
+}
+
+/**
+ * Get sample data for sports without live APIs yet (Football)
  */
 function getSampleOnlyGames(): Game[] {
-  const liveApiSports = new Set(['rugby', 'f1']);
-  return SAMPLE_GAMES.filter(g => !liveApiSports.has(g.sportId));
+  const liveApiSports = new Set(['rugby', 'f1', 'nrl']);
+  const supportedSports = new Set(['rugby', 'f1', 'nrl', 'football']);
+  return SAMPLE_GAMES.filter(g => !liveApiSports.has(g.sportId) && supportedSports.has(g.sportId));
 }
 
 /**
@@ -85,6 +109,7 @@ export async function fetchAllGames(): Promise<Game[]> {
   const results = await Promise.allSettled([
     fetchRugbyGames(),
     fetchF1Games(),
+    fetchNRLGames(),
   ]);
 
   const allGames: Game[] = [];

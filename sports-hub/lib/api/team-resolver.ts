@@ -45,6 +45,24 @@ const ALIASES: Record<string, string> = {
   'penrith panthers': 'panthers',
   'brisbane broncos': 'broncos',
   'new zealand warriors': 'warriors',
+  // FixtureDownload short NRL names
+  'knights': 'knights',
+  'cowboys': 'cowboys',
+  'eels': 'eels',
+  'dragons': 'dragons',
+  'raiders': 'raiders',
+  'titans': 'titans',
+  'bulldogs': 'bulldogs',
+  'sea eagles': 'sea-eagles',
+  'wests tigers': 'tigers',
+  'rabbitohs': 'rabbitohs',
+  'dolphins': 'dolphins',
+  'sharks': 'sharks',
+  'roosters': 'roosters',
+  'storm': 'storm',
+  'panthers': 'panthers',
+  'broncos': 'broncos',
+  'warriors': 'warriors',
 };
 
 // Register aliases

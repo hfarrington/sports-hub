@@ -120,25 +120,6 @@ export const SPORTS: Sport[] = [
     ],
   },
   {
-    id: 'cricket',
-    name: 'Cricket',
-    icon: '/icons/cricket.svg',
-    accent: '#ff6b35',
-    competitions: [
-      {
-        id: 'intl-cricket',
-        name: 'International Cricket',
-        icon: '/icons/cricket.svg',
-        teams: [
-          { id: 'black-caps', name: 'Black Caps', shortName: 'NZ', icon: '/icons/black-caps.svg', accent: '#000000' },
-          { id: 'australia-cricket', name: 'Australia', shortName: 'AUS', icon: '/icons/australia-cricket.svg', accent: '#FFB81C' },
-          { id: 'india-cricket', name: 'India', shortName: 'IND', icon: '/icons/india-cricket.svg', accent: '#0055A4' },
-          { id: 'england-cricket', name: 'England', shortName: 'ENG', icon: '/icons/england-cricket.svg', accent: '#002B5C' },
-        ],
-      },
-    ],
-  },
-  {
     id: 'football',
     name: 'Football',
     icon: '/icons/football.svg',
@@ -164,78 +145,6 @@ export const SPORTS: Sport[] = [
           { id: 'all-whites', name: 'All Whites', shortName: 'NZL', icon: '/icons/all-whites.svg', accent: '#ffffff' },
           { id: 'socceroos', name: 'Socceroos', shortName: 'AUS', icon: '/icons/socceroos.svg', accent: '#FFB81C' },
         ],
-      },
-    ],
-  },
-  {
-    id: 'nba',
-    name: 'NBA',
-    icon: '/icons/nba.svg',
-    accent: '#0066cc',
-    competitions: [
-      {
-        id: 'nba-season',
-        name: 'NBA Season',
-        icon: '/icons/nba.svg',
-        teams: [
-          { id: 'okc-thunder', name: 'Oklahoma City Thunder', shortName: 'OKC', icon: '/icons/okc.svg', accent: '#007AC1' },
-          { id: 'la-lakers', name: 'Los Angeles Lakers', shortName: 'LAL', icon: '/icons/lakers.svg', accent: '#552583' },
-          { id: 'boston-celtics', name: 'Boston Celtics', shortName: 'BOS', icon: '/icons/celtics.svg', accent: '#007A33' },
-          { id: 'golden-state', name: 'Golden State Warriors', shortName: 'GSW', icon: '/icons/gsw.svg', accent: '#1D428A' },
-          { id: 'phoenix-suns', name: 'Phoenix Suns', shortName: 'PHX', icon: '/icons/suns.svg', accent: '#E56020' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'nfl',
-    name: 'NFL',
-    icon: '/icons/nfl.svg',
-    accent: '#c0c0c0',
-    competitions: [
-      {
-        id: 'nfl-season',
-        name: 'NFL Season',
-        icon: '/icons/nfl.svg',
-        teams: [
-          { id: 'kc-chiefs', name: 'Kansas City Chiefs', shortName: 'KC', icon: '/icons/chiefs.svg', accent: '#E31837' },
-          { id: 'sf-49ers', name: 'San Francisco 49ers', shortName: 'SF', icon: '/icons/49ers.svg', accent: '#AA0000' },
-          { id: 'dal-cowboys', name: 'Dallas Cowboys', shortName: 'DAL', icon: '/icons/cowboys-nfl.svg', accent: '#003594' },
-          { id: 'phi-eagles', name: 'Philadelphia Eagles', shortName: 'PHI', icon: '/icons/eagles.svg', accent: '#004C54' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'tennis',
-    name: 'Tennis',
-    icon: '/icons/tennis.svg',
-    accent: '#e8c53a',
-    competitions: [
-      {
-        id: 'grand-slams',
-        name: 'Grand Slams',
-        icon: '/icons/tennis.svg',
-        teams: [
-          { id: 'australian-open', name: 'Australian Open', shortName: 'AO', icon: '/icons/aus-open.svg', accent: '#0055A4' },
-          { id: 'french-open', name: 'French Open', shortName: 'RG', icon: '/icons/french-open.svg', accent: '#D35400' },
-          { id: 'wimbledon', name: 'Wimbledon', shortName: 'WIM', icon: '/icons/wimbledon.svg', accent: '#006633' },
-          { id: 'us-open', name: 'US Open', shortName: 'USO', icon: '/icons/us-open.svg', accent: '#002B5C' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'ufc',
-    name: 'UFC / MMA',
-    icon: '/icons/ufc.svg',
-    accent: '#ff4444',
-    competitions: [
-      {
-        id: 'ufc-events',
-        name: 'UFC Events',
-        icon: '/icons/ufc.svg',
-        teams: [],
       },
     ],
   },

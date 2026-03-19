@@ -17,8 +17,8 @@ export interface WRMatch {
     id: string | number;
     name: string;
     abbreviation?: string;
-    score?: number;
   }>;
+  scores?: number[]; // [homeScore, awayScore] — separate from teams
   venue?: {
     name: string;
     city: string;

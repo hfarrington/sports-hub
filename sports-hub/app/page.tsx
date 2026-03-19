@@ -13,8 +13,7 @@ import { generateWeekends, getCurrentWeekendIndex, filterGamesBySearch, isGameOn
 import type { Game } from '@/lib/types';
 
 const SPORT_EMOJIS: Record<string, string> = {
-  rugby: '🏉', nrl: '⚔️', f1: '🏎️', cricket: '🏏',
-  football: '⚽', nba: '🏀', nfl: '🏈', tennis: '🎾', ufc: '🥊',
+  rugby: '🏉', nrl: '⚔️', f1: '🏎️', football: '⚽',
 };
 
 export default function Dashboard() {

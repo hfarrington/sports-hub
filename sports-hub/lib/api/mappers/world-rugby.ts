@@ -57,10 +57,12 @@ export function mapWorldRugbyMatches(matches: WRMatch[]): Game[] {
       round: event.label.replace(/\s*\d{4}$/, ''), // Strip year from comp name for round
     };
 
-    // Add scores for completed/live matches
+    // Add scores for completed/live matches (scores are in a separate array)
     if (match.status === 'C' || match.status === 'L' || match.status === 'LT') {
-      if (homeTeam.score != null) game.homeScore = homeTeam.score;
-      if (awayTeam.score != null) game.awayScore = awayTeam.score;
+      if (match.scores && match.scores.length >= 2) {
+        game.homeScore = match.scores[0];
+        game.awayScore = match.scores[1];
+      }
     }
 
     games.push(game);
