@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { usePreferences } from '@/providers/PreferencesProvider';
 import CountryPicker from '@/components/onboarding/CountryPicker';
 import SportPicker from '@/components/onboarding/SportPicker';
+import TeamPicker from '@/components/onboarding/TeamPicker';
 import TimezonePicker from '@/components/onboarding/TimezonePicker';
 
 export default function SettingsPage() {
@@ -16,6 +17,39 @@ export default function SettingsPage() {
       selectedSports: current.includes(id)
         ? current.filter(s => s !== id)
         : [...current, id],
+    });
+  }
+
+  function toggleTeam(sportId: string, teamId: string) {
+    const current = preferences.selectedTeams[sportId] || [];
+    updatePreferences({
+      selectedTeams: {
+        ...preferences.selectedTeams,
+        [sportId]: current.includes(teamId)
+          ? current.filter(t => t !== teamId)
+          : [...current, teamId],
+      },
+    });
+  }
+
+  function toggleCompetition(sportId: string, compId: string) {
+    const current = preferences.selectedCompetitions[sportId] || [];
+    updatePreferences({
+      selectedCompetitions: {
+        ...preferences.selectedCompetitions,
+        [sportId]: current.includes(compId)
+          ? current.filter(c => c !== compId)
+          : [...current, compId],
+      },
+    });
+  }
+
+  function toggleFollowAll(sportId: string) {
+    updatePreferences({
+      followAll: {
+        ...preferences.followAll,
+        [sportId]: !preferences.followAll[sportId],
+      },
     });
   }
 
@@ -48,6 +82,20 @@ export default function SettingsPage() {
           selected={preferences.selectedSports}
           onToggle={toggleSport}
         />
+
+        {/* Team/Competition pickers for each selected sport */}
+        {preferences.selectedSports.map(sportId => (
+          <TeamPicker
+            key={sportId}
+            sportId={sportId}
+            selectedCompetitions={preferences.selectedCompetitions[sportId] || []}
+            selectedTeams={preferences.selectedTeams[sportId] || []}
+            followAll={preferences.followAll[sportId] || false}
+            onToggleCompetition={(compId) => toggleCompetition(sportId, compId)}
+            onToggleTeam={(teamId) => toggleTeam(sportId, teamId)}
+            onToggleAll={() => toggleFollowAll(sportId)}
+          />
+        ))}
 
         <TimezonePicker
           timezone1={preferences.timezone1}

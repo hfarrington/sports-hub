@@ -98,13 +98,13 @@ export interface UserPreferences {
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   onboarded: false,
-  homeCountry: 'nz',
+  homeCountry: 'au',
   selectedSports: [],
   selectedCompetitions: {},
   selectedTeams: {},
   followAll: {},
-  timezone1: 'auckland',
-  timezone2: 'melbourne',
+  timezone1: 'perth',
+  timezone2: 'auckland',
   favorites: [],
   collapsedSections: [],
   theme: 'dark',

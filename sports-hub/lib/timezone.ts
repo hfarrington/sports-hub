@@ -3,8 +3,7 @@ import type { TimezoneOption, TimezoneResult } from './types';
 // ─── Timezone Registry ──────────────────────────────────────────────────────
 
 export const TIMEZONES: TimezoneOption[] = [
-  { id: 'auckland', label: 'NZT', city: 'Auckland', region: 'New Zealand', baseOffset: 12, hasDST: true, color: '#00c9ff' },
-  { id: 'wellington', label: 'NZT', city: 'Wellington', region: 'New Zealand', baseOffset: 12, hasDST: true, color: '#00c9ff' },
+  { id: 'auckland', label: 'NZT', city: 'New Zealand', region: 'New Zealand', baseOffset: 12, hasDST: true, color: '#00c9ff' },
   { id: 'fiji', label: 'FJT', city: 'Fiji', region: 'Pacific', baseOffset: 12, hasDST: true, color: '#00bcd4' },
   { id: 'samoa', label: 'WST', city: 'Samoa', region: 'Pacific', baseOffset: 13, hasDST: true, color: '#0097a7' },
   { id: 'tonga', label: 'TOT', city: 'Tonga', region: 'Pacific', baseOffset: 13, hasDST: false, color: '#00838f' },
