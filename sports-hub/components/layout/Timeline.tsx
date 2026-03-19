@@ -51,7 +51,7 @@ export default function Timeline({ weekends, currentIndex, onChange }: TimelineP
           className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/10 transition-all mr-2"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
-          This Weekend
+          This Week
         </button>
 
         <button

@@ -40,7 +40,7 @@ function DashboardContent() {
 
   const currentWeekend = weekends[weekendIndex];
 
-  // Filter games for this weekend + user's sports
+  // Filter games for this week + user's sports
   const weekendGames = useMemo(() => {
     if (!currentWeekend) return [];
     return allGames.filter(game => {
@@ -60,7 +60,7 @@ function DashboardContent() {
         }
       }
 
-      // Must be on this weekend
+      // Must be on this week
       return isGameOnWeekend(game, currentWeekend.startDate, currentWeekend.endDate);
     });
   }, [currentWeekend, preferences]);
@@ -116,7 +116,7 @@ function DashboardContent() {
             <p className="text-text-secondary text-sm">
               {searchQuery
                 ? 'No matches found for your search.'
-                : 'No games this weekend for your selected sports.'}
+                : 'No games this week for your selected sports.'}
             </p>
             <p className="text-text-muted text-xs mt-1">
               Try navigating to another weekend or adjusting your selections.
@@ -134,7 +134,7 @@ function DashboardContent() {
               key={sportId}
               id={sportId}
               title={sport.name}
-              subtitle={`${games.length} game${games.length !== 1 ? 's' : ''} this weekend`}
+              subtitle={`${games.length} game${games.length !== 1 ? 's' : ''} this week`}
               emoji={SPORT_EMOJIS[sportId] || '🏆'}
               accent={sport.accent}
             >
@@ -145,7 +145,7 @@ function DashboardContent() {
           );
         })}
 
-        {/* Sports with no games this weekend but user follows them */}
+        {/* Sports with no games this week but user follows them */}
         {preferences.selectedSports
           .filter(id => !gamesBySport[id]?.length && !searchQuery)
           .map(sportId => {
@@ -156,12 +156,12 @@ function DashboardContent() {
                 key={sportId}
                 id={sportId}
                 title={sport.name}
-                subtitle="No games this weekend"
+                subtitle="No games this week"
                 emoji={SPORT_EMOJIS[sportId] || '🏆'}
                 accent={sport.accent}
               >
                 <p className="text-text-muted text-xs py-2">
-                  No fixtures scheduled for this weekend.
+                  No fixtures scheduled for this week.
                 </p>
               </SportCard>
             );

@@ -3,27 +3,28 @@ import type { Weekend, Game } from './types';
 export function generateWeekends(year: number): Weekend[] {
   const weekends: Weekend[] = [];
   const now = new Date();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // Start from first Saturday of the year
+  // Start from first Monday of the year
   const start = new Date(year, 0, 1);
-  while (start.getDay() !== 6) start.setDate(start.getDate() + 1);
+  while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
 
   for (let i = 0; i < 52; i++) {
-    const sat = new Date(start);
-    sat.setDate(start.getDate() + i * 7);
-    const sun = new Date(sat);
-    sun.setDate(sat.getDate() + 1);
+    const mon = new Date(start);
+    mon.setDate(start.getDate() + i * 7);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const label = `Sat ${sat.getDate()} – Sun ${sun.getDate()} ${months[sun.getMonth()]}`;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const label = `Week ${pad(mon.getDate())}/${pad(mon.getMonth() + 1)} – ${pad(sun.getDate())}/${pad(sun.getMonth() + 1)}`;
 
     let tag: Weekend['tag'] = 'future';
     if (sun < now) tag = 'past';
-    else if (sat <= now && now <= sun) tag = 'current';
+    else if (mon <= now && now <= sun) tag = 'current';
 
     weekends.push({
       id: `wk-${i}`,
-      startDate: sat.toISOString().split('T')[0],
+      startDate: mon.toISOString().split('T')[0],
       endDate: sun.toISOString().split('T')[0],
       label,
       tag,
@@ -66,12 +67,9 @@ export function filterGamesByTeams(
 export function isGameOnWeekend(game: Game, startDate: string, endDate: string): boolean {
   if (!game.utc) return false;
   const gameDate = game.utc.split('T')[0];
-  // Include Friday evening through Monday morning to catch all weekend games
-  const start = new Date(startDate);
-  start.setDate(start.getDate() - 1); // Include Friday
-  const end = new Date(endDate);
-  end.setDate(end.getDate() + 1); // Include Monday
   const gd = new Date(gameDate);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
   return gd >= start && gd <= end;
 }
 
