@@ -75,8 +75,8 @@ export default function GameRow({ game, accent }: GameRowProps) {
         <TeamLogo src={game.away.icon} name={game.away.name} shortName={game.away.shortName} accent={accent} size={22} />
       </div>
 
-      {/* Meta row: timezone, broadcast, venue */}
-      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+      {/* Meta row: timezone, broadcast, venue — indented to align with team names */}
+      <div className="flex items-center gap-2 mt-1.5 flex-wrap" style={{ paddingLeft: '30px' }}>
         {game.utc && <TimezoneBadge utc={game.utc} />}
         {broadcast && (
           broadcast.url ? (
