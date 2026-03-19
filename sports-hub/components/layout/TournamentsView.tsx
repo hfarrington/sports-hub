@@ -53,13 +53,14 @@ export default function TournamentsView({ games }: TournamentsViewProps) {
       if (!sport) continue;
 
       // Auto-create a competition entry from game data
-      const compName = game.competitionId
+      // The round field now contains the competition name from the API
+      const compName = game.round || game.competitionId
         .replace(/-/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase());
 
       compMap.set(game.competitionId, {
         id: game.competitionId,
-        name: game.round || compName, // Use round as name hint if it looks like a comp name
+        name: compName,
         sportId: game.sportId,
         sportAccent: sport.accent,
         sportName: sport.name,

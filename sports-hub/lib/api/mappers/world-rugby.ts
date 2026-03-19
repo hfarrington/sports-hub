@@ -1,7 +1,7 @@
 // Maps World Rugby API responses to Game[]
 import type { Game } from '@/lib/types';
 import type { WRMatch } from '../fetchers/world-rugby';
-import { WR_COMPETITIONS } from '../config';
+import { WR_KNOWN_COMPETITIONS } from '../config';
 import { resolveTeam } from '../team-resolver';
 
 function mapStatus(wrStatus: string): 'upcoming' | 'live' | 'final' {
@@ -14,33 +14,53 @@ function mapStatus(wrStatus: string): 'upcoming' | 'live' | 'final' {
   }
 }
 
+/**
+ * Strip the year suffix from a World Rugby event label.
+ * e.g. "Super Rugby 2026" → "Super Rugby"
+ */
+function stripYear(label: string): string {
+  return label.replace(/\s*\d{4}$/, '').trim();
+}
+
+/**
+ * Generate a competition ID from an event label.
+ * Checks known mappings first, then creates a slug from the label.
+ */
+function getCompetitionId(eventLabel: string): string {
+  const baseName = stripYear(eventLabel);
+
+  // Check known mappings
+  if (WR_KNOWN_COMPETITIONS[baseName]) {
+    return WR_KNOWN_COMPETITIONS[baseName];
+  }
+
+  // Generate a slug from the label
+  return baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 export function mapWorldRugbyMatches(matches: WRMatch[]): Game[] {
   const games: Game[] = [];
 
   for (const match of matches) {
-    // Get competition mapping
     const event = match.events?.[0];
     if (!event) continue;
 
-    const compMapping = WR_COMPETITIONS[event.label];
-    if (!compMapping) continue; // Skip competitions we don't track
-
-    const { sportId, competitionId } = compMapping;
+    // All World Rugby competitions are rugby
+    const sportId = 'rugby';
+    const competitionId = getCompetitionId(event.label);
+    const competitionName = stripYear(event.label);
 
     // Get teams
     const homeTeam = match.teams?.[0];
     const awayTeam = match.teams?.[1];
     if (!homeTeam || !awayTeam) continue;
 
-    // Resolve to our TeamRef
     const home = resolveTeam(homeTeam.name, String(homeTeam.id));
     const away = resolveTeam(awayTeam.name, String(awayTeam.id));
 
-    // Build UTC time from the API date
     const utc = match.time?.label || '';
     if (!utc) continue;
 
-    // Venue info
     const venue = match.venue;
 
     const game: Game = {
@@ -54,10 +74,10 @@ export function mapWorldRugbyMatches(matches: WRMatch[]): Game[] {
       city: venue?.city || '',
       country: venue?.country || '',
       status: mapStatus(match.status),
-      round: event.label.replace(/\s*\d{4}$/, ''), // Strip year from comp name for round
+      round: competitionName,
     };
 
-    // Add scores for completed/live matches (scores are in a separate array)
+    // Add scores for completed/live matches
     if (match.status === 'C' || match.status === 'L' || match.status === 'LT') {
       if (match.scores && match.scores.length >= 2) {
         game.homeScore = match.scores[0];

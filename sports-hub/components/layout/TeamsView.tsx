@@ -23,6 +23,7 @@ interface TeamsViewProps {
 export default function TeamsView({ games }: TeamsViewProps) {
   const { preferences } = usePreferences();
   const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
+  const [offsetWeeks, setOffsetWeeks] = useState(0);
 
   // Get all teams from user's selected sports
   const availableTeams = useMemo(() => {
@@ -58,15 +59,31 @@ export default function TeamsView({ games }: TeamsViewProps) {
     });
   }
 
-  // Filter games for selected teams — all fixtures past + future
+  // Time window for viewing — rolling 8 weeks from offset
+  const { windowStart, windowEnd, windowLabel } = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 28 + offsetWeeks * 14); // 4 weeks back + offset
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 56); // 8 weeks window
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const label = `${pad(start.getDate())} ${MONTHS[start.getMonth()]} – ${pad(end.getDate())} ${MONTHS[end.getMonth()]}`;
+    return { windowStart: start.toISOString().split('T')[0], windowEnd: end.toISOString().split('T')[0], windowLabel: label };
+  }, [offsetWeeks]);
+
+  // Filter games for selected teams within time window
   const teamGames = useMemo(() => {
     if (selectedTeamIds.size === 0) return [];
     return games
-      .filter(g =>
-        selectedTeamIds.has(g.home.id) || selectedTeamIds.has(g.away.id)
-      )
+      .filter(g => {
+        if (!selectedTeamIds.has(g.home.id) && !selectedTeamIds.has(g.away.id)) return false;
+        const gameDate = g.utc.split('T')[0];
+        return gameDate >= windowStart && gameDate <= windowEnd;
+      })
       .sort((a, b) => new Date(a.utc).getTime() - new Date(b.utc).getTime());
-  }, [games, selectedTeamIds]);
+  }, [games, selectedTeamIds, windowStart, windowEnd]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -129,6 +146,45 @@ export default function TeamsView({ games }: TeamsViewProps) {
           );
         })}
       </div>
+
+      {/* Time navigation */}
+      {selectedTeamIds.size > 0 && (
+        <div className="rounded-xl p-3.5 border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.04)' }}>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setOffsetWeeks(w => w - 1)}
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+              title="Back 2 weeks"
+            >
+              ◂
+            </button>
+            <div className="text-center flex-1 px-3">
+              <p className="font-black text-sm uppercase tracking-wider text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                {windowLabel}
+              </p>
+              <p className="text-[10px] text-text-muted mt-0.5">
+                {teamGames.length} fixture{teamGames.length !== 1 ? 's' : ''} — {pastGames.length} played, {upcomingGames.length} upcoming
+              </p>
+            </div>
+            {offsetWeeks !== 0 && (
+              <button
+                onClick={() => setOffsetWeeks(0)}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-accent-cyan/30 text-accent-cyan hover:bg-accent-cyan/10 transition-all mr-2"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                Now
+              </button>
+            )}
+            <button
+              onClick={() => setOffsetWeeks(w => w + 1)}
+              className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.15] text-text-secondary hover:text-white hover:border-white/[0.3] transition-all text-sm"
+              title="Forward 2 weeks"
+            >
+              ▸
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Results */}
       {selectedTeamIds.size === 0 ? (
