@@ -8,7 +8,7 @@ import Timeline from '@/components/layout/Timeline';
 import SportCard from '@/components/sports/SportCard';
 import GameRow from '@/components/sports/GameRow';
 import { SPORTS } from '@/lib/constants';
-import { SAMPLE_GAMES } from '@/lib/sample-data';
+import { useGames } from '@/lib/hooks/useGames';
 import { generateWeekends, getCurrentWeekendIndex, filterGamesBySearch, isGameOnWeekend } from '@/lib/utils';
 import type { Game } from '@/lib/types';
 
@@ -32,6 +32,7 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const { preferences } = usePreferences();
+  const { games: allGames, loading, isLive } = useGames();
   const [searchQuery, setSearchQuery] = useState('');
 
   const weekends = useMemo(() => generateWeekends(2026), []);
@@ -43,7 +44,7 @@ function DashboardContent() {
   // Filter games for this weekend + user's sports
   const weekendGames = useMemo(() => {
     if (!currentWeekend) return [];
-    return SAMPLE_GAMES.filter(game => {
+    return allGames.filter(game => {
       // Must be a sport the user follows
       if (!preferences.selectedSports.includes(game.sportId)) return false;
 
@@ -101,6 +102,14 @@ function DashboardContent() {
           currentIndex={weekendIndex}
           onChange={setWeekendIndex}
         />
+
+        {/* Data source indicator */}
+        {!loading && (
+          <div className="flex items-center gap-2 text-[10px] text-text-muted">
+            <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-green-500' : 'bg-yellow-500'}`} />
+            {isLive ? 'Live data' : 'Sample data'}
+          </div>
+        )}
 
         {orderedSports.length === 0 && (
           <div className="text-center py-12">

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePreferences } from '@/providers/PreferencesProvider';
 import { SPORTS } from '@/lib/constants';
-import { SAMPLE_GAMES } from '@/lib/sample-data';
+import { useGames } from '@/lib/hooks/useGames';
 import { generateWeekends, getCurrentWeekendIndex, isGameOnWeekend } from '@/lib/utils';
 import { getBroadcast } from '@/lib/broadcast';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -29,6 +29,7 @@ export default function WatchPage() {
 
 function WatchContent() {
   const { preferences } = usePreferences();
+  const { games: allGames } = useGames();
   const [panelCount, setPanelCount] = useState(4);
 
   // Get games for the upcoming weekend from user's sports
@@ -39,7 +40,7 @@ function WatchContent() {
   const availableGames = useMemo(() => {
     if (!currentWeekend) return [];
 
-    return SAMPLE_GAMES.filter(game => {
+    return allGames.filter(game => {
       if (!preferences.selectedSports.includes(game.sportId)) return false;
 
       // Filter by selected teams (unless following all)

@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { SPORTS } from '@/lib/constants';
-import { SAMPLE_GAMES } from '@/lib/sample-data';
+import { useGames } from '@/lib/hooks/useGames';
 import GameRow from '@/components/sports/GameRow';
 
 export default function DetailPage() {
@@ -10,6 +10,8 @@ export default function DetailPage() {
   const router = useRouter();
   const sportId = params.sport as string;
   const slug = params.slug as string;
+
+  const { games: allGames } = useGames();
 
   const sport = SPORTS.find(s => s.id === sportId);
   if (!sport) {
@@ -26,7 +28,7 @@ export default function DetailPage() {
   const entityName = team?.name || competition?.name || slug;
 
   // Filter games for this team/competition
-  const games = SAMPLE_GAMES.filter(g => {
+  const games = allGames.filter(g => {
     if (g.sportId !== sportId) return false;
     if (team) return g.home.id === slug || g.away.id === slug;
     if (competition) return g.competitionId === slug;
