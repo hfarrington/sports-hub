@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header';
 import type { ViewMode } from '@/components/layout/Header';
 import Timeline from '@/components/layout/Timeline';
 import MonthlyView from '@/components/layout/MonthlyView';
+import TeamsView from '@/components/layout/TeamsView';
+import TournamentsView from '@/components/layout/TournamentsView';
 import SportCard from '@/components/sports/SportCard';
 import GameRow from '@/components/sports/GameRow';
 import { SPORTS } from '@/lib/constants';
@@ -101,6 +103,10 @@ function DashboardContent() {
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         {viewMode === 'monthly' ? (
           <MonthlyView games={allGames} searchQuery={searchQuery} />
+        ) : viewMode === 'teams' ? (
+          <TeamsView games={allGames} />
+        ) : viewMode === 'tournaments' ? (
+          <TournamentsView games={allGames} />
         ) : (
         <>
         <Timeline

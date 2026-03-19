@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-export type ViewMode = 'weekly' | 'monthly';
+export type ViewMode = 'weekly' | 'monthly' | 'teams' | 'tournaments';
 
 interface HeaderProps {
   searchQuery: string;
@@ -34,30 +34,26 @@ export default function Header({ searchQuery, onSearchChange, viewMode = 'weekly
             {/* View mode toggle */}
             {onViewModeChange && (
               <div className="flex gap-1.5">
-                <button
-                  onClick={() => onViewModeChange('weekly')}
-                  className="h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border"
-                  style={{
-                    fontFamily: 'var(--font-heading)',
-                    background: viewMode === 'weekly' ? 'rgba(0,201,255,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: viewMode === 'weekly' ? '#00c9ff' : '#666',
-                    borderColor: viewMode === 'weekly' ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  }}
-                >
-                  Weekly
-                </button>
-                <button
-                  onClick={() => onViewModeChange('monthly')}
-                  className="h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border"
-                  style={{
-                    fontFamily: 'var(--font-heading)',
-                    background: viewMode === 'monthly' ? 'rgba(0,201,255,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: viewMode === 'monthly' ? '#00c9ff' : '#666',
-                    borderColor: viewMode === 'monthly' ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.1)',
-                  }}
-                >
-                  Monthly
-                </button>
+                {([
+                  { mode: 'weekly' as const, label: 'Weekly' },
+                  { mode: 'monthly' as const, label: 'Monthly' },
+                  { mode: 'teams' as const, label: 'Teams' },
+                  { mode: 'tournaments' as const, label: 'Comps' },
+                ]).map(({ mode, label }) => (
+                  <button
+                    key={mode}
+                    onClick={() => onViewModeChange(mode)}
+                    className="h-8 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border"
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      background: viewMode === mode ? 'rgba(0,201,255,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: viewMode === mode ? '#00c9ff' : '#666',
+                      borderColor: viewMode === mode ? 'rgba(0,201,255,0.3)' : 'rgba(255,255,255,0.1)',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             )}
             <Link
