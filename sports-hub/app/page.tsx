@@ -4,7 +4,9 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePreferences } from '@/providers/PreferencesProvider';
 import Header from '@/components/layout/Header';
+import type { ViewMode } from '@/components/layout/Header';
 import Timeline from '@/components/layout/Timeline';
+import MonthlyView from '@/components/layout/MonthlyView';
 import SportCard from '@/components/sports/SportCard';
 import GameRow from '@/components/sports/GameRow';
 import { SPORTS } from '@/lib/constants';
@@ -33,6 +35,7 @@ function DashboardContent() {
   const { preferences } = usePreferences();
   const { games: allGames, loading, isLive } = useGames();
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('weekly');
 
   const weekends = useMemo(() => generateWeekends(2026), []);
   const initialIndex = useMemo(() => getCurrentWeekendIndex(weekends), [weekends]);
@@ -93,9 +96,13 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen pb-16">
-      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} viewMode={viewMode} onViewModeChange={setViewMode} />
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+        {viewMode === 'monthly' ? (
+          <MonthlyView games={allGames} searchQuery={searchQuery} />
+        ) : (
+        <>
         <Timeline
           weekends={weekends}
           currentIndex={weekendIndex}
@@ -166,6 +173,8 @@ function DashboardContent() {
               </SportCard>
             );
           })}
+        </>
+        )}
       </div>
     </div>
   );
