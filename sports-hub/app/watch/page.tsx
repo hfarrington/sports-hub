@@ -43,14 +43,17 @@ function WatchContent() {
     return allGames.filter(game => {
       if (!preferences.selectedSports.includes(game.sportId)) return false;
 
-      // Filter by selected teams (unless following all)
+      // Filter by selected teams/competitions (unless following all)
       if (!preferences.followAll[game.sportId]) {
         const selectedTeams = preferences.selectedTeams[game.sportId] || [];
         const selectedComps = preferences.selectedCompetitions[game.sportId] || [];
-        if (selectedTeams.length > 0 || selectedComps.length > 0) {
-          const teamMatch = selectedTeams.length === 0 ||
-            selectedTeams.includes(game.home.id) || selectedTeams.includes(game.away.id);
-          const compMatch = selectedComps.length === 0 ||
+        const hasTeamFilter = selectedTeams.length > 0;
+        const hasCompFilter = selectedComps.length > 0;
+
+        if (hasTeamFilter || hasCompFilter) {
+          const teamMatch = hasTeamFilter &&
+            (selectedTeams.includes(game.home.id) || selectedTeams.includes(game.away.id));
+          const compMatch = hasCompFilter &&
             selectedComps.includes(game.competitionId);
           if (!teamMatch && !compMatch) return false;
         }

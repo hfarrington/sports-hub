@@ -20,12 +20,12 @@ async function fetchRugbyGames(): Promise<Game[]> {
   if (cached) return cached;
 
   try {
-    // Fetch a wide window: 4 weeks back + 8 weeks forward
+    // Fetch a wide window: 8 weeks back + 26 weeks forward (~6 months)
     const now = new Date();
     const start = new Date(now);
-    start.setDate(start.getDate() - 28);
+    start.setDate(start.getDate() - 56);
     const end = new Date(now);
-    end.setDate(end.getDate() + 56);
+    end.setDate(end.getDate() + 182);
 
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
