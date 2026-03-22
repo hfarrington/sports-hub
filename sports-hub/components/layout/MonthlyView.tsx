@@ -55,11 +55,12 @@ export default function MonthlyView({ games, searchQuery }: MonthlyViewProps) {
         const hasCompFilter = selectedComps.length > 0;
 
         if (hasTeamFilter || hasCompFilter) {
-          const teamMatch = hasTeamFilter &&
-            (selectedTeams.includes(game.home.id) || selectedTeams.includes(game.away.id));
-          const compMatch = hasCompFilter &&
-            selectedComps.includes(game.competitionId);
-          if (!teamMatch && !compMatch) return false;
+          if (hasTeamFilter && !selectedTeams.includes(game.home.id) && !selectedTeams.includes(game.away.id)) {
+            return false;
+          }
+          if (hasCompFilter && !selectedComps.includes(game.competitionId)) {
+            return false;
+          }
         }
       }
 
